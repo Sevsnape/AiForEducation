@@ -20,6 +20,16 @@
 
 ## 快速开始
 
+### 前端（React + Vite，Mock，不连后端）
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+### 后端（LangGraph CLI）
+
 ```bash
 python -m venv .venv
 # Windows: .venv\Scripts\activate
@@ -28,7 +38,11 @@ pip install -e ".[dev]"
 # 对话一次
 aiforec chat "帮我出题：一次函数"
 aiforec chat "最近好焦虑" --mode counsel
-aiforec chat "帮我出题" --role teacher --user-id teacher-1
+
+# 登录（返回 token）后再带 token 对话
+aiforec login --email linxiao@student.demo --password student123
+aiforec users
+aiforec chat "你好" --token <上一步返回的token>
 
 # 跑测试
 pytest -q

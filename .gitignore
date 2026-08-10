@@ -12,3 +12,6 @@ dist/
 build/
 *.db
 .DS_Store
+node_modules/
+apps/web/dist/
+*.local

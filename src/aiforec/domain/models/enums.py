@@ -14,6 +14,7 @@ class Intent(StrEnum):
     COUNSEL = "counsel"
     GENERAL = "general"
     SAFETY = "safety"
+    STUDY_PLAN = "study_plan"
 
 
 class RiskLevel(StrEnum):
@@ -33,3 +34,4 @@ class ClientMode(StrEnum):
     QUESTION_GEN = "question_gen"
     PRACTICE = "practice"
     COUNSEL = "counsel"
+    STUDY_PLAN = "study_plan"

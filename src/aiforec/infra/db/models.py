@@ -35,10 +35,26 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     external_id: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
     display_name: Mapped[str] = mapped_column(String(128), default="")
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="active")
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
+    token_hash: Mapped[str] = mapped_column(String(128), unique=True)
+    role_used: Mapped[str] = mapped_column(String(32))
+    user_agent: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Organization(Base):
@@ -192,6 +208,40 @@ class LearningEvent(Base):
     difficulty: Mapped[int | None] = mapped_column(Integer, nullable=True)
     payload_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class QuestionAsk(Base):
+    """Student learning question → knowledge module (analytics; no counsel)."""
+
+    __tablename__ = "question_asks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
+    thread_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("threads.id"), nullable=True)
+    message_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("messages.id"), nullable=True)
+    subject: Mapped[str] = mapped_column(String(64), default="数学")
+    module_tag: Mapped[str] = mapped_column(String(128))
+    intent: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    question_preview: Mapped[str] = mapped_column(String(256), default="")
+    org_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("organizations.id"), nullable=True)
+    class_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("class_groups.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class LearningPlan(Base):
+    """Student–AI co-created study plan (learning domain only)."""
+
+    __tablename__ = "learning_plans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
+    thread_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("threads.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(255), default="")
+    horizon_days: Mapped[int] = mapped_column(Integer, default=14)
+    status: Mapped[str] = mapped_column(String(32), default="draft")
+    content_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class WeeklySummary(Base):

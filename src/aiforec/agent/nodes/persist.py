@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from langchain_core.messages import AIMessage, HumanMessage
 
+from aiforec.domain.services.analytics_service import AnalyticsService
 from aiforec.domain.services.memory_store import get_store
 
 
@@ -12,7 +13,7 @@ def persist_turn(state: dict) -> dict:
     if not thread_id or not user_id:
         return {"needs_resummary": False}
 
-    store.add_message(
+    user_msg = store.add_message(
         thread_id=thread_id,
         role="user",
         content=state.get("user_text") or "",
@@ -34,6 +35,18 @@ def persist_turn(state: dict) -> dict:
             "payload_type": (state.get("response_payload") or {}).get("type"),
         },
     )
+
+    asks = AnalyticsService(store).record_ask_from_turn(
+        student_id=user_id,
+        user_text=state.get("user_text") or "",
+        intent=state.get("intent"),
+        thread_id=thread_id,
+        message_id=user_msg.id,
+    )
+
+    payload = state.get("response_payload") or {}
+    if payload.get("type") == "study_plan" and payload.get("plan"):
+        store.save_study_plan(user_id, payload["plan"])
 
     for event in state.get("audit_events") or []:
         store.add_audit(
@@ -58,6 +71,7 @@ def persist_turn(state: dict) -> dict:
         "needs_resummary": True,
         "persist_ops": [
             {"op": "messages_written", "thread_id": thread_id},
+            {"op": "question_asks_written", "count": len(asks)},
             {"op": "audits_written", "count": len(state.get("audit_events") or [])},
         ],
     }

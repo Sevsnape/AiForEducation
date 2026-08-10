@@ -74,3 +74,19 @@ def test_teacher_counsel_mode_denied() -> None:
         client_mode="counsel",
     )
     assert "无权" in out["response_text"] or out["response_payload"].get("type") == "guard_deny"
+
+
+def test_study_plan_co_create() -> None:
+    from aiforec.domain.services.memory_store import get_store
+
+    out = invoke_agent(
+        user_id="u-s1",
+        role="student",
+        user_text="帮我定一个两周学习计划",
+        client_mode="study_plan",
+    )
+    assert out["intent"] == "study_plan"
+    assert out["response_payload"].get("type") == "study_plan"
+    plan = get_store().get_study_plan("u-s1")
+    assert plan is not None
+    assert plan.get("focus_modules") or plan.get("goals")

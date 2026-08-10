@@ -9,9 +9,12 @@ def _keyword_intent(text: str) -> Intent | None:
     practice_keys = ["练习", "刷题", "巩固", "错题", "再测"]
     question_keys = ["出题", "组卷", "出几道", "出一些题", "试卷"]
     diagnose_keys = ["薄弱", "哪里不会", "诊断", "学情"]
+    plan_keys = ["学习计划", "定计划", "周计划", "复习计划", "帮我规划", "制定计划"]
 
     if any(k in text for k in counsel_keys):
         return Intent.COUNSEL
+    if any(k in text for k in plan_keys):
+        return Intent.STUDY_PLAN
     if any(k in text for k in question_keys) or "generate question" in t:
         return Intent.QUESTION_GEN
     if any(k in text for k in practice_keys):
@@ -39,6 +42,7 @@ def route(state: dict) -> dict:
             ClientMode.QUESTION_GEN.value: Intent.QUESTION_GEN,
             ClientMode.PRACTICE.value: Intent.PRACTICE,
             ClientMode.COUNSEL.value: Intent.COUNSEL,
+            ClientMode.STUDY_PLAN.value: Intent.STUDY_PLAN,
         }
         intent = mapping.get(mode, Intent.GENERAL)
         return {
@@ -49,6 +53,8 @@ def route(state: dict) -> dict:
     if role == UserRole.TEACHER:
         guessed = _keyword_intent(text) or Intent.QUESTION_GEN
         if guessed == Intent.COUNSEL:
+            guessed = Intent.QUESTION_GEN
+        if guessed == Intent.STUDY_PLAN:
             guessed = Intent.QUESTION_GEN
         return {
             "intent": guessed.value,

@@ -47,7 +47,7 @@ START
   → post_risk_check       # 专家输出后再检一次（尤其 counsel）
   → review                # 出题/练习产物质检；counsel 可跳过或轻检
   → assemble              # 统一对外回复 + UI hints
-  → persist_turn          # 写 Message / Artifact 引用 / Audit
+  → persist_turn          # 写 Message / Artifact / Audit / question_asks（学习意图）
   → END
 
   （旁路）若 risk=high 或 guard 拒绝：
@@ -222,6 +222,7 @@ persist_ops[], needs_resummary, audit_events[]
 ### 5.9 `persist_turn`
 
 - 写 messages、artifact、audit、学习事件  
+- 学习意图回合额外写入 **`question_asks`**（模块打标；counsel/safety 跳过）  
 - 标记 `needs_resummary`  
 - **幂等**：以 `turn_id` / 执行 id 去重
 
@@ -579,3 +580,5 @@ CorrectProfileRequest
 |------|------|
 | 2026-08-10 | 首版：搭建前框架思路 |
 | 2026-08-10 | 增补第 17 章：与官方规范符合性对照 |
+| 2026-08-10 | persist_turn 写入 question_asks；关联学情分析文档 |
+| 2026-08-10 | 新增 study_plan 专家；learning_plans 持久化 |

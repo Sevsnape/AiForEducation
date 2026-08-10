@@ -15,9 +15,11 @@ CREATE TABLE users (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     external_id     TEXT UNIQUE,
     display_name    TEXT NOT NULL DEFAULT '',
-    email           TEXT,
+    email           TEXT UNIQUE,
+    password_hash   TEXT,
     status          TEXT NOT NULL DEFAULT 'active'
                     CHECK (status IN ('active', 'disabled', 'deleted')),
+    last_login_at   TIMESTAMPTZ,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -26,8 +28,10 @@ COMMENT ON TABLE users IS '系统用户主体：学生/老师/管理员共用一
 COMMENT ON COLUMN users.id IS '用户主键 UUID';
 COMMENT ON COLUMN users.external_id IS '外部登录体系 ID（如学校 SSO、OAuth sub），可空';
 COMMENT ON COLUMN users.display_name IS '展示名';
-COMMENT ON COLUMN users.email IS '邮箱，可空';
+COMMENT ON COLUMN users.email IS '登录邮箱，唯一；本地账密登录主标识';
+COMMENT ON COLUMN users.password_hash IS '密码哈希（PBKDF2 等）；SSO-only 账号可空';
 COMMENT ON COLUMN users.status IS '账号状态：active=正常，disabled=停用，deleted=逻辑删除';
+COMMENT ON COLUMN users.last_login_at IS '最近成功登录时间';
 COMMENT ON COLUMN users.created_at IS '创建时间';
 COMMENT ON COLUMN users.updated_at IS '最近更新时间';
 
@@ -127,6 +131,45 @@ COMMENT ON COLUMN consents.learning_personalize IS '是否允许用学情画像�
 COMMENT ON COLUMN consents.history_retain IS '是否留存会话历史；关闭则弱化跨会话记忆';
 COMMENT ON COLUMN consents.share_learning_with_teacher IS '是否将学习侧学情共享给授权老师；不影响 support 域（老师永不可见）';
 COMMENT ON COLUMN consents.updated_at IS '最近变更时间';
+
+-- ---------------------------------------------------------------------------
+-- Auth sessions (local account login)
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE auth_sessions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    token_hash      TEXT NOT NULL UNIQUE,
+    role_used       TEXT NOT NULL
+                    CHECK (role_used IN ('student', 'teacher', 'admin')),
+    user_agent      TEXT,
+    ip_address      TEXT,
+    expires_at      TIMESTAMPTZ NOT NULL,
+    revoked_at      TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE auth_sessions IS '登录会话：存 token 哈希而非明文；登出或过期后不可再用';
+COMMENT ON COLUMN auth_sessions.id IS '会话主键';
+COMMENT ON COLUMN auth_sessions.user_id IS '登录用户';
+COMMENT ON COLUMN auth_sessions.token_hash IS '会话 token 的哈希（客户端持有明文 token）';
+COMMENT ON COLUMN auth_sessions.role_used IS '本次登录选用的角色（多角色账号进入某一端）';
+COMMENT ON COLUMN auth_sessions.user_agent IS '客户端 UA，可空';
+COMMENT ON COLUMN auth_sessions.ip_address IS '登录 IP，可空';
+COMMENT ON COLUMN auth_sessions.expires_at IS '过期时间';
+COMMENT ON COLUMN auth_sessions.revoked_at IS '主动登出/吊销时间；非空即失效';
+COMMENT ON COLUMN auth_sessions.created_at IS '创建时间';
+
+CREATE INDEX idx_auth_sessions_user
+    ON auth_sessions (user_id, created_at DESC);
+
+COMMENT ON INDEX idx_auth_sessions_user IS '按用户列出会话';
+
+CREATE INDEX idx_auth_sessions_active
+    ON auth_sessions (token_hash)
+    WHERE revoked_at IS NULL;
+
+COMMENT ON INDEX idx_auth_sessions_active IS '加速未吊销 token 校验';
 
 -- ---------------------------------------------------------------------------
 -- Conversation history

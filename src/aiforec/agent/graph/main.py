@@ -11,6 +11,7 @@ from aiforec.agent.experts.diagnose import diagnose
 from aiforec.agent.experts.general import general
 from aiforec.agent.experts.practice import practice
 from aiforec.agent.experts.question_gen import question_gen
+from aiforec.agent.experts.study_plan import study_plan
 from aiforec.agent.nodes.assemble import assemble
 from aiforec.agent.nodes.guard import guard
 from aiforec.agent.nodes.load_context import load_context
@@ -43,6 +44,7 @@ def _after_route(
     "diagnose",
     "counsel",
     "general",
+    "study_plan",
     "safety_reply",
 ]:
     intent = state.get("intent") or Intent.GENERAL.value
@@ -52,6 +54,7 @@ def _after_route(
         Intent.DIAGNOSE.value: "diagnose",
         Intent.COUNSEL.value: "counsel",
         Intent.GENERAL.value: "general",
+        Intent.STUDY_PLAN.value: "study_plan",
         Intent.SAFETY.value: "safety_reply",
     }
     return mapping.get(intent, "general")  # type: ignore[return-value]
@@ -85,6 +88,7 @@ def build_main_graph(*, checkpointer: Any | None = None):
     graph.add_node("diagnose", diagnose)
     graph.add_node("counsel", counsel)
     graph.add_node("general", general)
+    graph.add_node("study_plan", study_plan)
     graph.add_node("safety_reply", _deny_safety_text)
     graph.add_node("post_risk_check", post_risk_check)
     graph.add_node("review", review)
@@ -112,11 +116,12 @@ def build_main_graph(*, checkpointer: Any | None = None):
             "diagnose": "diagnose",
             "counsel": "counsel",
             "general": "general",
+            "study_plan": "study_plan",
             "safety_reply": "safety_reply",
         },
     )
 
-    for expert in ("question_gen", "practice", "diagnose", "counsel", "general"):
+    for expert in ("question_gen", "practice", "diagnose", "counsel", "general", "study_plan"):
         graph.add_edge(expert, "post_risk_check")
 
     graph.add_edge("safety_reply", "assemble")
