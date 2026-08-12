@@ -6,6 +6,7 @@ import type {
   LearningProfile,
   ManagedUser,
   ModuleHotspot,
+  QuestionPack,
   StudentAskProfile,
   StudyPlan,
   SupportProfile,
@@ -51,6 +52,83 @@ export const mockStudyPlan: StudyPlan = {
   focusModules: ['二次函数', '应用题'],
   updatedAt: '2026-08-09',
 }
+
+/** Teacher studio: versioned question packs */
+export const mockQuestionPacks: QuestionPack[] = [
+  {
+    id: 'qp-1',
+    title: '二次函数 · 中档综合',
+    subject: '数学',
+    knowledge: '二次函数',
+    createdAt: '2026-08-08T10:00:00.000Z',
+    updatedAt: '2026-08-10T14:20:00.000Z',
+    currentVersion: 2,
+    versions: [
+      {
+        id: 'qpv-1-1',
+        version: 1,
+        createdAt: '2026-08-08T10:00:00.000Z',
+        source: 'studio_gen',
+        note: '出题台按知识点初版',
+        subject: '数学',
+        knowledge: '二次函数',
+        questions: [
+          {
+            stem: '已知抛物线 y=x²-2x+1，求顶点坐标。',
+            type: 'short_answer',
+            answer: '(1,0)',
+            explanation: '配方或公式法。',
+            knowledgeTags: ['二次函数'],
+            difficulty: 2,
+          },
+          {
+            stem: '求对称轴方程。',
+            type: 'short_answer',
+            answer: 'x=1',
+            explanation: '对称轴 x=-b/(2a)。',
+            knowledgeTags: ['二次函数'],
+            difficulty: 2,
+          },
+        ],
+      },
+      {
+        id: 'qpv-1-2',
+        version: 2,
+        createdAt: '2026-08-10T14:20:00.000Z',
+        source: 'chat_save',
+        note: '助手对话整理：增难度、补解析',
+        subject: '数学',
+        knowledge: '二次函数',
+        questions: [
+          {
+            stem: '已知抛物线 y=x²-2x+1，求顶点坐标，并说明是否与 x 轴相切。',
+            type: 'short_answer',
+            answer: '(1,0)；相切',
+            explanation: '顶点在 x 轴上则相切。',
+            knowledgeTags: ['二次函数'],
+            difficulty: 3,
+          },
+          {
+            stem: '若平移使顶点变为 (2,1)，写出新解析式。',
+            type: 'short_answer',
+            answer: 'y=(x-2)²+1',
+            explanation: '顶点式平移。',
+            knowledgeTags: ['二次函数'],
+            difficulty: 3,
+          },
+          {
+            stem: '比较开口与 y=2x² 的异同。',
+            type: 'short_answer',
+            answer: '开口同向上，本抛物线更「窄」若系数更大；此处 a=1 更宽',
+            explanation: '|a| 越大开口越窄。',
+            knowledgeTags: ['二次函数'],
+            difficulty: 3,
+          },
+        ],
+      },
+    ],
+  },
+]
 
 export const mockLearning: LearningProfile = {
   subjectsFocus: ['数学'],

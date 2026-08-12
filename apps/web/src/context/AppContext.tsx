@@ -10,6 +10,7 @@ import {
   mockConsent,
   mockGrowthStages,
   mockLearning,
+  mockQuestionPacks,
   mockStudyPlan,
   mockSupport,
   mockThreads,
@@ -24,12 +25,34 @@ import type {
   GrowthStage,
   LearningProfile,
   ManagedUser,
+  QuestionItem,
+  QuestionPack,
+  QuestionPackSource,
   Role,
   StudyPlan,
   SupportProfile,
   ThreadSummary,
 } from '../types'
 import { welcomeStudent, welcomeTeacher } from '../mock/data'
+
+type CreatePackInput = {
+  title: string
+  subject: string
+  knowledge: string
+  questions: QuestionItem[]
+  source: QuestionPackSource
+  note?: string
+}
+
+type AppendVersionInput = {
+  packId: string
+  questions: QuestionItem[]
+  source: QuestionPackSource
+  note?: string
+  subject?: string
+  knowledge?: string
+  title?: string
+}
 
 type AppContextValue = {
   role: Role | null
@@ -54,6 +77,14 @@ type AppContextValue = {
   setSupport: React.Dispatch<React.SetStateAction<SupportProfile>>
   studyPlan: StudyPlan | null
   setStudyPlan: React.Dispatch<React.SetStateAction<StudyPlan | null>>
+  /** Teacher: versioned question packs in studio */
+  questionPacks: QuestionPack[]
+  createQuestionPack: (input: CreatePackInput) => QuestionPack
+  appendPackVersion: (input: AppendVersionInput) => QuestionPack | null
+  /** Pack currently attached to teacher chat for refinement */
+  chatPackId: string | null
+  attachPackToChat: (packId: string) => void
+  clearChatPack: () => void
   users: ManagedUser[]
   setUsers: React.Dispatch<React.SetStateAction<ManagedUser[]>>
   busy: boolean
@@ -63,6 +94,10 @@ type AppContextValue = {
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
+
+function stamp() {
+  return new Date().toISOString()
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role | null>(null)
@@ -76,6 +111,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [learning, setLearning] = useState(mockLearning)
   const [support, setSupport] = useState(mockSupport)
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(mockStudyPlan)
+  const [questionPacks, setQuestionPacks] = useState<QuestionPack[]>(mockQuestionPacks)
+  const [chatPackId, setChatPackId] = useState<string | null>(null)
   const [users, setUsers] = useState(mockUsers)
   const [busy, setBusy] = useState(false)
 
@@ -86,11 +123,82 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUserConsents((prev) => ({ ...prev, [userId]: flags }))
   }, [])
 
+  const createQuestionPack = useCallback((input: CreatePackInput) => {
+    const now = stamp()
+    const pack: QuestionPack = {
+      id: `qp-${Date.now()}`,
+      title: input.title,
+      subject: input.subject,
+      knowledge: input.knowledge,
+      createdAt: now,
+      updatedAt: now,
+      currentVersion: 1,
+      versions: [
+        {
+          id: `qpv-${Date.now()}`,
+          version: 1,
+          createdAt: now,
+          source: input.source,
+          note: input.note,
+          questions: input.questions,
+          subject: input.subject,
+          knowledge: input.knowledge,
+        },
+      ],
+    }
+    setQuestionPacks((prev) => [pack, ...prev])
+    return pack
+  }, [])
+
+  const appendPackVersion = useCallback((input: AppendVersionInput) => {
+    let result: QuestionPack | null = null
+    setQuestionPacks((prev) => {
+      const idx = prev.findIndex((p) => p.id === input.packId)
+      if (idx < 0) return prev
+      const p = prev[idx]
+      const now = stamp()
+      const version = p.currentVersion + 1
+      const next: QuestionPack = {
+        ...p,
+        title: input.title || p.title,
+        subject: input.subject || p.subject,
+        knowledge: input.knowledge || p.knowledge,
+        updatedAt: now,
+        currentVersion: version,
+        versions: [
+          ...p.versions,
+          {
+            id: `qpv-${Date.now()}`,
+            version,
+            createdAt: now,
+            source: input.source,
+            note: input.note,
+            questions: input.questions,
+            subject: input.subject || p.subject,
+            knowledge: input.knowledge || p.knowledge,
+          },
+        ],
+      }
+      result = next
+      const copy = [...prev]
+      copy[idx] = next
+      return copy
+    })
+    return result
+  }, [])
+
+  const attachPackToChat = useCallback((packId: string) => {
+    setChatPackId(packId)
+  }, [])
+
+  const clearChatPack = useCallback(() => setChatPackId(null), [])
+
   const logout = useCallback(() => {
     setRole(null)
     setCurrentUser(null)
     setMessages([])
     setMode('auto')
+    setChatPackId(null)
   }, [])
 
   const login = useCallback(
@@ -103,6 +211,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentUser(result.user)
       setRole(result.role)
       setMode(result.role === 'teacher' ? 'question_gen' : 'auto')
+      setChatPackId(null)
 
       if (result.role === 'admin') {
         setMessages([])
@@ -146,6 +255,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSupport,
       studyPlan,
       setStudyPlan,
+      questionPacks,
+      createQuestionPack,
+      appendPackVersion,
+      chatPackId,
+      attachPackToChat,
+      clearChatPack,
       users,
       setUsers,
       busy,
@@ -167,6 +282,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       learning,
       support,
       studyPlan,
+      questionPacks,
+      createQuestionPack,
+      appendPackVersion,
+      chatPackId,
+      attachPackToChat,
+      clearChatPack,
       users,
       busy,
       login,

@@ -1,38 +1,106 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ChatBubble } from '../../components/ChatBubble'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ChatBubble, type PackSaveActions } from '../../components/ChatBubble'
 import { FileAttachControl } from '../../components/FileAttachControl'
 import { ModeChips } from '../../components/ModeChips'
 import { PrivateBadge } from '../../components/PrivateBadge'
 import { useApp } from '../../context/AppContext'
 import { mockInvoke } from '../../mock/agent'
-import type { ChatAttachment } from '../../types'
+import type { ChatAttachment, QuestionItem } from '../../types'
 
 export function ChatPage() {
-  const { mode, setMode, messages, setMessages, busy, setBusy, role, threads, setStudyPlan } =
-    useApp()
+  const {
+    mode,
+    setMode,
+    messages,
+    setMessages,
+    busy,
+    setBusy,
+    role,
+    threads,
+    setStudyPlan,
+    questionPacks,
+    createQuestionPack,
+    appendPackVersion,
+    chatPackId,
+    clearChatPack,
+    attachPackToChat,
+  } = useApp()
+  const navigate = useNavigate()
   const [text, setText] = useState('')
   const [files, setFiles] = useState<ChatAttachment[]>([])
   const [activeThread, setActiveThread] = useState(threads[0]?.id ?? 'current')
+  const [packFlash, setPackFlash] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const isTeacher = role === 'teacher'
   const activeThreads = threads.filter((t) => t.status !== 'archived')
   const activeMeta = activeThreads.find((t) => t.id === activeThread)
+  const chatPack = useMemo(
+    () => (chatPackId ? questionPacks.find((p) => p.id === chatPackId) ?? null : null),
+    [chatPackId, questionPacks],
+  )
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, busy])
+
+  const packSave = useMemo<PackSaveActions | undefined>(() => {
+    if (!isTeacher) return undefined
+    return {
+      onSaveToStudio: (questions: QuestionItem[], meta) => {
+        const targetId = chatPackId || meta?.packId
+        if (targetId && questionPacks.some((p) => p.id === targetId)) {
+          const next = appendPackVersion({
+            packId: targetId,
+            questions,
+            source: 'chat_save',
+            note: '对话整理后存入',
+          })
+          if (next) {
+            attachPackToChat(next.id)
+            setPackFlash(`已写入题包「${next.title}」v${next.currentVersion}`)
+          }
+        } else {
+          const pack = createQuestionPack({
+            title: `对话整理 · ${questions.length} 题`,
+            subject: '数学',
+            knowledge: questions[0]?.knowledgeTags?.[0] || '综合',
+            questions,
+            source: 'chat_save',
+            note: '由助手对话整理新建',
+          })
+          attachPackToChat(pack.id)
+          setPackFlash(`已新建题包「${pack.title}」v1`)
+        }
+        navigate('/teacher/studio')
+      },
+    }
+  }, [
+    isTeacher,
+    chatPackId,
+    questionPacks,
+    appendPackVersion,
+    createQuestionPack,
+    attachPackToChat,
+    navigate,
+  ])
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     const trimmed = text.trim()
     if ((!trimmed && files.length === 0) || busy || !role) return
     const attached = [...files]
+    const packHint =
+      isTeacher && chatPack
+        ? `\n\n（当前关联题包：${chatPack.title} v${chatPack.currentVersion}，请在此基础上改题）`
+        : ''
     const userMsg = {
       id: `u-${Date.now()}`,
       role: 'user' as const,
       content:
-        trimmed ||
-        (attached.length ? `（已附上 ${attached.length} 个文件，请结合材料回答）` : ''),
+        (trimmed ||
+          (attached.length ? `（已附上 ${attached.length} 个文件，请结合材料回答）` : '')) +
+        packHint,
       createdAt: new Date().toISOString(),
       attachments: attached.length ? attached : undefined,
       private: mode === 'counsel',
@@ -48,6 +116,18 @@ export function ChatPage() {
         mode,
         attachments: attached,
       })
+      // Tag AI question packs with active studio pack for save-as-version
+      if (
+        isTeacher &&
+        chatPack &&
+        reply.payload?.type === 'question_set'
+      ) {
+        reply.payload = {
+          ...reply.payload,
+          packId: chatPack.id,
+          packVersion: chatPack.currentVersion,
+        }
+      }
       setMessages((prev) => [...prev, reply])
       if (reply.payload?.type === 'study_plan') {
         setStudyPlan(reply.payload.plan)
@@ -115,14 +195,46 @@ export function ChatPage() {
             </h1>
             <p className="page-desc">
               {isTeacher
-                ? '出题与教学答疑（不含学生支持侧）。'
+                ? '讨论后把题包存入出题台；同一题包保留修改历史。不含学生支持侧。'
                 : activeMeta
                   ? `续聊 · ${activeMeta.lastActiveAt}`
                   : '练习、出题、学习计划或聊聊心情'}
             </p>
           </div>
-          <ModeChips value={mode} onChange={setMode} teacher={isTeacher} />
+          <div className="chat__toolbar-actions">
+            {isTeacher ? (
+              <Link className="btn btn-sm" to="/teacher/studio">
+                打开出题台
+              </Link>
+            ) : null}
+            <ModeChips value={mode} onChange={setMode} teacher={isTeacher} />
+          </div>
         </header>
+
+        {isTeacher && chatPack ? (
+          <div className="pack-banner" role="status">
+            <span>
+              当前题包：<strong>{chatPack.title}</strong> · v{chatPack.currentVersion} ·{' '}
+              {chatPack.versions[chatPack.versions.length - 1]?.questions.length ?? 0} 题
+            </span>
+            <Link to="/teacher/studio">管理</Link>
+            <button type="button" className="pack-banner__x" onClick={() => clearChatPack()}>
+              解除关联
+            </button>
+          </div>
+        ) : null}
+
+        {packFlash ? (
+          <div className="pack-banner pack-banner--ok" role="status">
+            <span>{packFlash}</span>
+            <Link to="/teacher/studio" onClick={() => setPackFlash(null)}>
+              查看出题台
+            </Link>
+            <button type="button" className="pack-banner__x" onClick={() => setPackFlash(null)}>
+              关闭
+            </button>
+          </div>
+        ) : null}
 
         <div className="chat__stage">
           <div className="chat__stream" aria-live="polite">
@@ -132,34 +244,66 @@ export function ChatPage() {
                   <span />
                   <span />
                 </div>
-                <h2>今天想练什么？</h2>
-                <p>选上方模式，或直接描述知识点、题量和心情。</p>
-                <div className="chat-empty__hints">
-                  {(
-                    [
-                      ['练习二次函数选择', 'practice'],
-                      ['出 3 道一次函数题', 'question_gen'],
-                      ['帮我定两周计划', 'study_plan'],
-                    ] as const
-                  ).map(([label, m]) => (
-                    <button
-                      key={label}
-                      type="button"
-                      className="hint-chip"
-                      onClick={() => {
-                        setMode(m)
-                        setText(label)
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                {isTeacher ? (
+                  <>
+                    <h2>和 AI 完善题包</h2>
+                    <p>
+                      可先在出题台生成题包并「添加到对话」；也可在这里出题，再点「存入出题台」归档与回溯。
+                    </p>
+                    <div className="chat-empty__hints">
+                      {(
+                        [
+                          ['按这份讲义出 3 道中档题', 'question_gen'],
+                          ['把第 2 题改成填空并提高难度', 'question_gen'],
+                          ['整理成一套可考试审阅的题包', 'question_gen'],
+                        ] as const
+                      ).map(([label, m]) => (
+                        <button
+                          key={label}
+                          type="button"
+                          className="hint-chip"
+                          onClick={() => {
+                            setMode(m)
+                            setText(label)
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h2>今天想练什么？</h2>
+                    <p>选上方模式，或直接描述知识点、题量和心情。</p>
+                    <div className="chat-empty__hints">
+                      {(
+                        [
+                          ['练习二次函数选择', 'practice'],
+                          ['出 3 道一次函数题', 'question_gen'],
+                          ['帮我定两周计划', 'study_plan'],
+                        ] as const
+                      ).map(([label, m]) => (
+                        <button
+                          key={label}
+                          type="button"
+                          className="hint-chip"
+                          onClick={() => {
+                            setMode(m)
+                            setText(label)
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             ) : null}
 
             {messages.map((m) => (
-              <ChatBubble key={m.id} message={m} />
+              <ChatBubble key={m.id} message={m} packSave={packSave} />
             ))}
             {busy ? (
               <div className="typing-row">
@@ -195,13 +339,17 @@ export function ChatPage() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={
-                  mode === 'counsel'
-                    ? '想聊聊最近的学习压力或心情…也可附上作业截图（仅你可见）'
-                    : mode === 'question_gen'
-                      ? '例如：二次函数选择题 3 道 · 可附讲义文件'
-                      : mode === 'study_plan'
-                        ? '例如：两周二次函数巩固，每天 15 分钟'
-                        : '输入消息或添加文件，Enter 发送 · Shift+Enter 换行'
+                  isTeacher
+                    ? chatPack
+                      ? `继续完善「${chatPack.title}」…例如：第 1 题加提示，整体提高一档难度`
+                      : '出题或讨论材料 · 生成后可「存入出题台」归档'
+                    : mode === 'counsel'
+                      ? '想聊聊最近的学习压力或心情…也可附上作业截图（仅你可见）'
+                      : mode === 'question_gen'
+                        ? '例如：二次函数选择题 3 道 · 可附讲义文件'
+                        : mode === 'study_plan'
+                          ? '例如：两周二次函数巩固，每天 15 分钟'
+                          : '输入消息或添加文件，Enter 发送 · Shift+Enter 换行'
                 }
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -321,7 +469,7 @@ export function ChatPage() {
         }
         .chat-main {
           display: grid;
-          grid-template-rows: auto 1fr;
+          grid-template-rows: auto auto 1fr;
           min-width: 0;
           min-height: 0;
           background:
@@ -340,11 +488,46 @@ export function ChatPage() {
           backdrop-filter: blur(6px);
         }
         .chat__title-block { min-width: 0; }
+        .chat__toolbar-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.45rem;
+        }
+        .pack-banner {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.55rem;
+          padding: 0.45rem 1rem;
+          font-size: 0.78rem;
+          background: #eef4f1;
+          border-bottom: 1px solid var(--line);
+          color: var(--ink);
+        }
+        .pack-banner--ok {
+          background: var(--accent-soft);
+          border-bottom-color: color-mix(in srgb, var(--accent) 25%, var(--line));
+        }
+        .pack-banner a {
+          color: var(--accent);
+          font-weight: 650;
+          text-decoration: none;
+        }
+        .pack-banner__x {
+          margin-left: auto;
+          border: 0;
+          background: transparent;
+          color: var(--ink-muted);
+          cursor: pointer;
+          font-size: 0.74rem;
+        }
         .chat__stage {
           display: grid;
           grid-template-rows: 1fr auto;
           min-height: 0;
-          height: calc(100vh - var(--header-h) - 5.6rem);
+          height: auto;
+          max-height: calc(100vh - var(--header-h) - 5.6rem);
           overflow: hidden;
         }
         .chat__stream {

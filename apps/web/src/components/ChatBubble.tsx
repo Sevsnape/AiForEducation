@@ -1,4 +1,4 @@
-import type { ChatMessage, Intent } from '../types'
+import type { ChatMessage, Intent, QuestionItem } from '../types'
 import { PrivateBadge } from './PrivateBadge'
 
 const intentZh: Partial<Record<Intent, string>> = {
@@ -11,8 +11,22 @@ const intentZh: Partial<Record<Intent, string>> = {
   safety: '安全',
 }
 
-export function ChatBubble({ message }: { message: ChatMessage }) {
+export type PackSaveActions = {
+  onSaveToStudio: (questions: QuestionItem[], meta?: { packId?: string; packVersion?: number }) => void
+}
+
+export function ChatBubble({
+  message,
+  packSave,
+}: {
+  message: ChatMessage
+  packSave?: PackSaveActions
+}) {
   const mine = message.role === 'user'
+  const questionSet =
+    message.payload?.type === 'question_set' ? message.payload : null
+  const questions = questionSet?.questions ?? null
+
   return (
     <article className={`bubble-row ${mine ? 'bubble-row--mine' : 'bubble-row--ai'}`}>
       {!mine ? (
@@ -28,6 +42,9 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
             {message.intent ? (
               <span className="bubble__intent">{intentZh[message.intent] || message.intent}</span>
             ) : null}
+            {questionSet?.packId ? (
+              <span className="bubble__intent">题包 v{questionSet.packVersion ?? '?'}</span>
+            ) : null}
           </header>
         ) : null}
         <p className="bubble__text">{message.content}</p>
@@ -40,9 +57,9 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
             ))}
           </ul>
         ) : null}
-        {message.payload?.type === 'question_set' ? (
+        {questionSet ? (
           <div className="payload">
-            {message.payload.questions.map((q, i) => (
+            {questionSet.questions.map((q, i) => (
               <div key={i} className="payload__item">
                 <div className="payload__label">第 {i + 1} 题</div>
                 <div>{q.stem}</div>
@@ -86,6 +103,23 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
                 聚焦：{message.payload.plan.focusModules.join('、')}
               </div>
             </div>
+          </div>
+        ) : null}
+
+        {packSave && questions?.length && !mine ? (
+          <div className="bubble-pack" role="group" aria-label="题包操作">
+            <button
+              type="button"
+              className="pack-btn"
+              onClick={() =>
+                packSave.onSaveToStudio(questions, {
+                  packId: questionSet?.packId,
+                  packVersion: questionSet?.packVersion,
+                })
+              }
+            >
+              存入出题台
+            </button>
           </div>
         ) : null}
       </div>
@@ -223,6 +257,30 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
         .payload--safety .payload__item {
           border-color: rgba(163,59,59,0.2);
           background: var(--danger-soft);
+        }
+        .bubble-pack {
+          margin-top: 0.55rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.3rem;
+          padding-top: 0.45rem;
+          border-top: 1px solid var(--line);
+        }
+        .pack-btn {
+          border: 1px solid var(--line);
+          background: #f7faf8;
+          color: var(--ink);
+          font-size: 0.7rem;
+          font-weight: 650;
+          padding: 0.22rem 0.5rem;
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: background 0.12s ease, border-color 0.12s ease;
+        }
+        .pack-btn:hover {
+          background: var(--accent-soft);
+          border-color: var(--accent);
+          color: var(--accent);
         }
         @keyframes riseIn {
           from { opacity: 0; transform: translateY(5px); }

@@ -66,6 +66,34 @@ export type QuestionItem = {
 export type QuestionPayload = {
   type: 'question_set'
   questions: QuestionItem[]
+  /** If saved / linked to a studio pack */
+  packId?: string
+  packVersion?: number
+}
+
+/** Teacher question pack — traceable, versioned */
+export type QuestionPackSource = 'studio_gen' | 'chat_save' | 'manual_edit'
+
+export type QuestionPackVersion = {
+  id: string
+  version: number
+  createdAt: string
+  source: QuestionPackSource
+  note?: string
+  questions: QuestionItem[]
+  subject: string
+  knowledge: string
+}
+
+export type QuestionPack = {
+  id: string
+  title: string
+  subject: string
+  knowledge: string
+  createdAt: string
+  updatedAt: string
+  currentVersion: number
+  versions: QuestionPackVersion[]
 }
 
 export type PracticePayload = {
