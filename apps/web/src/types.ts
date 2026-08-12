@@ -35,6 +35,14 @@ export type Intent =
   | 'safety'
   | 'study_plan'
 
+export type ChatAttachment = {
+  id: string
+  name: string
+  size: number
+  mime: string
+  kind: 'pdf' | 'doc' | 'text' | 'image' | 'other'
+}
+
 export type ChatMessage = {
   id: string
   role: 'user' | 'assistant'
@@ -42,6 +50,7 @@ export type ChatMessage = {
   intent?: Intent
   private?: boolean
   createdAt: string
+  attachments?: ChatAttachment[]
   payload?: QuestionPayload | PracticePayload | SafetyPayload | StudyPlanPayload | null
 }
 
@@ -85,13 +94,37 @@ export type StudyPlanPayload = {
   plan: StudyPlan
 }
 
+export type ThreadStatus = 'active' | 'archived'
+
 export type ThreadSummary = {
   id: string
   title: string
   primaryIntent: Intent | 'mixed'
   preview: string
   lastActiveAt: string
+  /** ISO date for sorting, e.g. 2026-08-10 */
+  lastActiveDate: string
+  messageCount: number
+  pinned?: boolean
+  status: ThreadStatus
   privateHint?: boolean
+}
+
+export type GrowthStageStatus = 'current' | 'past' | 'archived'
+
+export type GrowthStage = {
+  id: string
+  /** e.g. 本周 · 8/4 – 8/10 */
+  weekLabel: string
+  weekStart: string
+  weekEnd: string
+  status: GrowthStageStatus
+  learningText: string
+  supportText: string
+  nextSteps: string[]
+  practiceCount?: number
+  accuracy?: number
+  focusModules?: string[]
 }
 
 export type ConsentFlags = {
@@ -119,6 +152,7 @@ export type SupportProfile = {
   safeSummary: string
 }
 
+/** @deprecated prefer GrowthStage list; kept for single-card fallbacks */
 export type WeeklySummary = {
   weekLabel: string
   learningText: string

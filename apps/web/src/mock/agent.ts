@@ -1,4 +1,4 @@
-import type { ChatMessage, ClientMode, Intent, Role } from '../types'
+import type { ChatAttachment, ChatMessage, ClientMode, Intent, Role } from '../types'
 
 function id() {
   return `m-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -15,7 +15,7 @@ function detectIntent(text: string, mode: ClientMode, role: Role): Intent {
   if (/自杀|自残|不想活/.test(text)) return 'safety'
   if (/焦虑|难过|压力|心情|害怕|紧张/.test(text)) return 'counsel'
   if (/学习计划|定计划|周计划|复习计划|帮我规划/.test(text)) return 'study_plan'
-  if (/出题|组卷|出几道/.test(text)) return 'question_gen'
+  if (/出题|组卷|出几道|根据.*文件|按.*材料/.test(text)) return 'question_gen'
   if (/练习|刷题|巩固|错题/.test(text)) return 'practice'
   if (/薄弱|诊断|哪里不会/.test(text)) return 'diagnose'
   return role === 'teacher' || role === 'admin' ? 'question_gen' : 'general'
@@ -25,9 +25,12 @@ export async function mockInvoke(input: {
   role: Role
   text: string
   mode: ClientMode
+  attachments?: ChatAttachment[]
 }): Promise<ChatMessage> {
   await new Promise((r) => setTimeout(r, 450 + Math.random() * 350))
   const intent = detectIntent(input.text, input.mode, input.role)
+  const files = input.attachments || []
+  const fileNames = files.map((f) => f.name).join('、')
 
   if (intent === 'safety' && input.role === 'teacher' && input.mode === 'counsel') {
     return {
@@ -59,21 +62,26 @@ export async function mockInvoke(input: {
   }
 
   if (intent === 'question_gen') {
+    const basedOn = fileNames ? `已参考附件「${fileNames}」` : '已按当前知识点'
     return {
       id: id(),
       role: 'assistant',
-      content: '已按当前知识点生成示例题（前端 Mock，未连接后端模型）。可调整难度后再次出题。',
+      content: `${basedOn}生成示例题（前端 Mock，未真正解析文件）。可调整难度后再次出题。`,
       intent: 'question_gen',
       createdAt: new Date().toISOString(),
       payload: {
         type: 'question_set',
         questions: [
           {
-            stem: '二次函数 y=x²-2x-3 的对称轴是？',
+            stem: fileNames
+              ? `根据材料要点，写出一个与「${fileNames}」相关的关键结论。`
+              : '二次函数 y=x²-2x-3 的对称轴是？',
             type: 'short_answer',
-            answer: 'x=1',
-            explanation: '对称轴 x=-b/(2a)=2/2=1。',
-            knowledgeTags: ['二次函数'],
+            answer: fileNames ? '（Mock：依材料）' : 'x=1',
+            explanation: fileNames
+              ? '接入后端后将抽取文件知识点并质检。'
+              : '对称轴 x=-b/(2a)=2/2=1。',
+            knowledgeTags: fileNames ? ['材料仿写'] : ['二次函数'],
             difficulty: 3,
           },
           {
@@ -93,18 +101,22 @@ export async function mockInvoke(input: {
     return {
       id: id(),
       role: 'assistant',
-      content: '我们先做一道短练习。答完可以继续（后续将接后端 interrupt 续跑）。',
+      content: fileNames
+        ? `已看到你附上的「${fileNames}」。我们先做一道与材料相关的短练习（Mock）。`
+        : '我们先做一道短练习。答完可以继续（后续将接后端 interrupt 续跑）。',
       intent: 'practice',
       createdAt: new Date().toISOString(),
       payload: {
         type: 'practice_set',
         awaitingAnswer: true,
         question: {
-          stem: '计算：(-3)+5 = ?',
+          stem: fileNames
+            ? '结合附件材料：请复述其中一道题的题意（用自己的话）。'
+            : '计算：(-3)+5 = ?',
           type: 'short_answer',
-          answer: '2',
-          explanation: '5-3=2。',
-          knowledgeTags: ['有理数加减'],
+          answer: fileNames ? '（学生自述）' : '2',
+          explanation: fileNames ? '先复述再求解，减少审题跳步。' : '5-3=2。',
+          knowledgeTags: fileNames ? ['材料练习'] : ['有理数加减'],
           difficulty: 2,
         },
       },
@@ -115,8 +127,9 @@ export async function mockInvoke(input: {
     return {
       id: id(),
       role: 'assistant',
-      content:
-        '我在认真听你说。学习压力大的时候，先允许自己喘口气是很正常的。想先说说最近哪一件事最让你难受，还是学习上的哪一块最让你焦虑？（此对话默认仅你可见。）',
+      content: fileNames
+        ? `我看到你附上了「${fileNames}」（仅你可见）。想先说说这份材料/作业哪一点让你最卡住或最难受吗？`
+        : '我在认真听你说。学习压力大的时候，先允许自己喘口气是很正常的。想先说说最近哪一件事最让你难受，还是学习上的哪一块最让你焦虑？（此对话默认仅你可见。）',
       intent: 'counsel',
       private: true,
       createdAt: new Date().toISOString(),
@@ -162,10 +175,11 @@ export async function mockInvoke(input: {
   return {
     id: id(),
     role: 'assistant',
-    content:
-      input.role === 'teacher'
-        ? '可以直接描述「学科 + 知识点 + 题型 + 数量」，或使用出题台表单生成题包。'
-        : '你可以选择下方模式：练习、出题、学习计划，或聊聊心情。也可以直接打字告诉我。',
+    content: fileNames
+      ? `已收到附件「${fileNames}」。你可以继续提问、要求讲解，或切换到「出题 / 练习」模式基于材料生成题。`
+      : input.role === 'teacher'
+        ? '可以直接描述「学科 + 知识点 + 题型 + 数量」，附上讲义文件，或使用出题台按文件组卷。'
+        : '你可以选择下方模式：练习、出题、学习计划，或聊聊心情；也可以添加文件一起问。',
     intent: 'general',
     createdAt: new Date().toISOString(),
   }

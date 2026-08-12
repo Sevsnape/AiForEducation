@@ -8,26 +8,26 @@ import {
 } from 'react'
 import {
   mockConsent,
+  mockGrowthStages,
   mockLearning,
   mockStudyPlan,
   mockSupport,
   mockThreads,
   mockUserConsents,
   mockUsers,
-  mockWeekly,
 } from '../mock/data'
 import { mockLogin, roleHome } from '../mock/auth'
 import type {
   ChatMessage,
   ClientMode,
   ConsentFlags,
+  GrowthStage,
   LearningProfile,
   ManagedUser,
   Role,
   StudyPlan,
   SupportProfile,
   ThreadSummary,
-  WeeklySummary,
 } from '../types'
 import { welcomeStudent, welcomeTeacher } from '../mock/data'
 
@@ -39,6 +39,9 @@ type AppContextValue = {
   messages: ChatMessage[]
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   threads: ThreadSummary[]
+  setThreads: React.Dispatch<React.SetStateAction<ThreadSummary[]>>
+  growthStages: GrowthStage[]
+  setGrowthStages: React.Dispatch<React.SetStateAction<GrowthStage[]>>
   /** Current student session consent mirror (admin-managed; not editable on student Me). */
   consent: ConsentFlags
   orgConsentDefaults: ConsentFlags
@@ -51,7 +54,6 @@ type AppContextValue = {
   setSupport: React.Dispatch<React.SetStateAction<SupportProfile>>
   studyPlan: StudyPlan | null
   setStudyPlan: React.Dispatch<React.SetStateAction<StudyPlan | null>>
-  weekly: WeeklySummary
   users: ManagedUser[]
   setUsers: React.Dispatch<React.SetStateAction<ManagedUser[]>>
   busy: boolean
@@ -67,6 +69,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<ManagedUser | null>(null)
   const [mode, setMode] = useState<ClientMode>('auto')
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [threads, setThreads] = useState(mockThreads)
+  const [growthStages, setGrowthStages] = useState(mockGrowthStages)
   const [orgConsentDefaults, setOrgConsentDefaults] = useState(mockConsent)
   const [userConsents, setUserConsents] = useState(mockUserConsents)
   const [learning, setLearning] = useState(mockLearning)
@@ -74,8 +78,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(mockStudyPlan)
   const [users, setUsers] = useState(mockUsers)
   const [busy, setBusy] = useState(false)
-  const threads = mockThreads
-  const weekly = mockWeekly
 
   const consent =
     (currentUser && userConsents[currentUser.id]) || orgConsentDefaults
@@ -130,6 +132,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       messages,
       setMessages,
       threads,
+      setThreads,
+      growthStages,
+      setGrowthStages,
       consent,
       orgConsentDefaults,
       setOrgConsentDefaults,
@@ -141,7 +146,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSupport,
       studyPlan,
       setStudyPlan,
-      weekly,
       users,
       setUsers,
       busy,
@@ -155,6 +159,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mode,
       messages,
       threads,
+      growthStages,
       consent,
       orgConsentDefaults,
       userConsents,
@@ -162,7 +167,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       learning,
       support,
       studyPlan,
-      weekly,
       users,
       busy,
       login,

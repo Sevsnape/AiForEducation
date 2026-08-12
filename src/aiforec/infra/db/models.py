@@ -244,6 +244,25 @@ class LearningPlan(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class UploadedFile(Base):
+    __tablename__ = "uploaded_files"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    owner_user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
+    thread_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("threads.id"), nullable=True)
+    message_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("messages.id"), nullable=True)
+    purpose: Mapped[str] = mapped_column(String(32), default="chat")
+    file_name: Mapped[str] = mapped_column(String(512))
+    mime_type: Mapped[str] = mapped_column(String(128), default="application/octet-stream")
+    byte_size: Mapped[int] = mapped_column(Integer, default=0)
+    storage_key: Mapped[str] = mapped_column(String(512))
+    sha256: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    extract_status: Mapped[str] = mapped_column(String(32), default="pending")
+    extract_text_ref: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(32), default="owner")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class WeeklySummary(Base):
     __tablename__ = "weekly_summaries"
     __table_args__ = (UniqueConstraint("student_id", "week_start"),)

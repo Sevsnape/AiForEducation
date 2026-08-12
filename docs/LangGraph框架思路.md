@@ -261,6 +261,8 @@ persist_ops[], needs_resummary, audit_events[]
 | 工具 | 谁用 | 说明 |
 |------|------|------|
 | `search_knowledge_points` | 出题/练习 | 返回标准知识点标签 |
+| `fetch_file_extract` | 出题/对话 | 按 `file_id` 取抽取文本切片（非全文灌 State） |
+| `search_in_upload` | 出题/练习 | 在用户上传材料内检索片段 |
 | `fetch_learning_events` | 练习/诊断 | 近 N 次对错 |
 | `save_artifact` | persist 或出题末 | 最好经 persist 统一写 |
 | `retrieve_student_history` | load_context | 已按角色过滤 |
@@ -582,3 +584,4 @@ CorrectProfileRequest
 | 2026-08-10 | 增补第 17 章：与官方规范符合性对照 |
 | 2026-08-10 | persist_turn 写入 question_asks；关联学情分析文档 |
 | 2026-08-10 | 新增 study_plan 专家；learning_plans 持久化 |
+| 2026-08-12 | 工具：文件抽取/上传材料检索；关联文件出题文档 |
