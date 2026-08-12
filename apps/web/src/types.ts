@@ -209,3 +209,24 @@ export type StudentAskProfile = {
   totalAsks: number
   modules: { moduleTag: string; askCount: number }[]
 }
+
+/** Admin-managed school shared library (visible to teachers/students by audience) */
+export type SharedMaterialAudience = 'all' | 'teachers' | 'students'
+export type SharedMaterialStatus = 'published' | 'draft' | 'archived'
+
+export type SharedMaterial = {
+  id: string
+  title: string
+  description: string
+  subject: string
+  tags: string[]
+  fileName: string
+  mime: string
+  byteSize: number
+  kind: ChatAttachment['kind']
+  audience: SharedMaterialAudience
+  status: SharedMaterialStatus
+  uploadedByName: string
+  createdAt: string
+  updatedAt: string
+}

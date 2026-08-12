@@ -6,6 +6,7 @@ import { BrandMark } from './BrandMark'
 const links = [
   { to: '/admin/users', label: '用户管理', short: '用户' },
   { to: '/admin/orgs', label: '组织班级', short: '组织' },
+  { to: '/admin/materials', label: '资料管理', short: '资料' },
   { to: '/admin/consents', label: '同意设置', short: '同意' },
   { to: '/admin/analytics', label: '学情分析', short: '学情' },
   { to: '/admin/audit', label: '审计日志', short: '审计' },

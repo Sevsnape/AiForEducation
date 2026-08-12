@@ -11,6 +11,7 @@ import {
   mockGrowthStages,
   mockLearning,
   mockQuestionPacks,
+  mockSharedMaterials,
   mockStudyPlan,
   mockSupport,
   mockThreads,
@@ -29,6 +30,7 @@ import type {
   QuestionPack,
   QuestionPackSource,
   Role,
+  SharedMaterial,
   StudyPlan,
   SupportProfile,
   ThreadSummary,
@@ -85,6 +87,13 @@ type AppContextValue = {
   chatPackId: string | null
   attachPackToChat: (packId: string) => void
   clearChatPack: () => void
+  /** Admin school shared library */
+  sharedMaterials: SharedMaterial[]
+  upsertSharedMaterial: (
+    material: Omit<SharedMaterial, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
+  ) => SharedMaterial
+  setSharedMaterialStatus: (id: string, status: SharedMaterial['status']) => void
+  removeSharedMaterial: (id: string) => void
   users: ManagedUser[]
   setUsers: React.Dispatch<React.SetStateAction<ManagedUser[]>>
   busy: boolean
@@ -113,6 +122,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(mockStudyPlan)
   const [questionPacks, setQuestionPacks] = useState<QuestionPack[]>(mockQuestionPacks)
   const [chatPackId, setChatPackId] = useState<string | null>(null)
+  const [sharedMaterials, setSharedMaterials] = useState<SharedMaterial[]>(mockSharedMaterials)
   const [users, setUsers] = useState(mockUsers)
   const [busy, setBusy] = useState(false)
 
@@ -121,6 +131,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setUserConsent = useCallback((userId: string, flags: ConsentFlags) => {
     setUserConsents((prev) => ({ ...prev, [userId]: flags }))
+  }, [])
+
+  const upsertSharedMaterial = useCallback(
+    (material: Omit<SharedMaterial, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => {
+      const now = stamp()
+      if (material.id) {
+        let saved: SharedMaterial | null = null
+        setSharedMaterials((prev) =>
+          prev.map((m) => {
+            if (m.id !== material.id) return m
+            saved = { ...m, ...material, id: m.id, createdAt: m.createdAt, updatedAt: now }
+            return saved
+          }),
+        )
+        return (
+          saved || {
+            ...material,
+            id: material.id,
+            createdAt: now,
+            updatedAt: now,
+          }
+        )
+      }
+      const created: SharedMaterial = {
+        ...material,
+        id: `sm-${Date.now()}`,
+        createdAt: now,
+        updatedAt: now,
+      }
+      setSharedMaterials((prev) => [created, ...prev])
+      return created
+    },
+    [],
+  )
+
+  const setSharedMaterialStatus = useCallback((id: string, status: SharedMaterial['status']) => {
+    const now = stamp()
+    setSharedMaterials((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, status, updatedAt: now } : m)),
+    )
+  }, [])
+
+  const removeSharedMaterial = useCallback((id: string) => {
+    setSharedMaterials((prev) => prev.filter((m) => m.id !== id))
   }, [])
 
   const createQuestionPack = useCallback((input: CreatePackInput) => {
@@ -261,6 +315,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       chatPackId,
       attachPackToChat,
       clearChatPack,
+      sharedMaterials,
+      upsertSharedMaterial,
+      setSharedMaterialStatus,
+      removeSharedMaterial,
       users,
       setUsers,
       busy,
@@ -288,6 +346,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       chatPackId,
       attachPackToChat,
       clearChatPack,
+      sharedMaterials,
+      upsertSharedMaterial,
+      setSharedMaterialStatus,
+      removeSharedMaterial,
       users,
       busy,
       login,

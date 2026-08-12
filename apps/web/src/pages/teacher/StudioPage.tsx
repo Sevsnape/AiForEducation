@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FileAttachControl } from '../../components/FileAttachControl'
+import { SharedMaterialPicker } from '../../components/SharedMaterialPicker'
 import { useApp } from '../../context/AppContext'
 import type { ChatAttachment, QuestionItem, QuestionPack } from '../../types'
 
@@ -61,7 +62,7 @@ export function StudioPage() {
   async function onGenerate(e: FormEvent) {
     e.preventDefault()
     if ((sourceMode === 'file' || sourceMode === 'mixed') && files.length === 0) {
-      alert('请先添加教材 / 试卷 / 讲义等文件')
+      alert('请先引用校本资料或上传教材 / 试卷 / 讲义等文件')
       return
     }
     setLoading(true)
@@ -86,7 +87,9 @@ export function StudioPage() {
       questions: list,
       source: 'studio_gen',
       note: fromFile
-        ? `按${sourceMode === 'mixed' ? '文件+知识点' : '文件'}生成`
+        ? `按${sourceMode === 'mixed' ? '文件+知识点' : '文件'}生成${
+            files.some((f) => f.id.startsWith('lib-')) ? '（含校本资料）' : ''
+          }`
         : '按知识点生成',
     })
     setSelectedId(pack.id)
@@ -141,7 +144,7 @@ export function StudioPage() {
         <div>
           <h1 className="page-title">出题台</h1>
           <p className="page-desc">
-            题包可追溯、可版本管理：生成后「添加到对话」与 AI 完善，再存回同一题包留下修改历史。
+            题包可追溯、可版本管理；可引用管理员发布的校本资料出题，也可「添加到对话」与 AI 完善。
           </p>
         </div>
         <Link className="btn btn-sm" to="/teacher/chat">
@@ -209,10 +212,11 @@ export function StudioPage() {
               setFiles(next)
             }}
           >
+            <SharedMaterialPicker files={files} onChange={setFiles} forRole="teacher" />
             <FileAttachControl
               files={files}
               onChange={setFiles}
-              hint="支持 PDF / Word / 图片 / 文本，单文件 ≤10MB，最多 5 个"
+              hint="也可本地上传 PDF / Word / 图片 / 文本，单文件 ≤10MB，最多 5 个（含校本）"
             />
           </div>
         )}
@@ -426,6 +430,8 @@ export function StudioPage() {
           border: 1px dashed var(--line-strong);
           background: #fafbfa;
           transition: border-color 0.12s ease, background 0.12s ease;
+          display: grid;
+          gap: 0.55rem;
         }
         .studio-files.is-drag {
           border-color: var(--accent);

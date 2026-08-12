@@ -4,6 +4,7 @@ import { ChatBubble, type PackSaveActions } from '../../components/ChatBubble'
 import { FileAttachControl } from '../../components/FileAttachControl'
 import { ModeChips } from '../../components/ModeChips'
 import { PrivateBadge } from '../../components/PrivateBadge'
+import { SharedMaterialPicker } from '../../components/SharedMaterialPicker'
 import { useApp } from '../../context/AppContext'
 import { mockInvoke } from '../../mock/agent'
 import type { ChatAttachment, QuestionItem } from '../../types'
@@ -275,12 +276,12 @@ export function ChatPage() {
                 ) : (
                   <>
                     <h2>今天想练什么？</h2>
-                    <p>选上方模式，或直接描述知识点、题量和心情。</p>
+                    <p>可选校本资料让 AI 出题并带你做，或直接描述知识点。</p>
                     <div className="chat-empty__hints">
                       {(
                         [
+                          ['按校本讲义出题并讲解', 'question_gen'],
                           ['练习二次函数选择', 'practice'],
-                          ['出 3 道一次函数题', 'question_gen'],
                           ['帮我定两周计划', 'study_plan'],
                         ] as const
                       ).map(([label, m]) => (
@@ -322,6 +323,15 @@ export function ChatPage() {
 
           <form className="chat__composer" onSubmit={onSubmit}>
             <div className="composer-shell">
+              <div className="composer-lib">
+                <SharedMaterialPicker
+                  files={files}
+                  onChange={setFiles}
+                  compact
+                  disabled={busy}
+                  forRole={isTeacher ? 'teacher' : 'student'}
+                />
+              </div>
               {files.length > 0 ? (
                 <div className="composer-files">
                   <FileAttachControl
@@ -342,14 +352,14 @@ export function ChatPage() {
                   isTeacher
                     ? chatPack
                       ? `继续完善「${chatPack.title}」…例如：第 1 题加提示，整体提高一档难度`
-                      : '出题或讨论材料 · 生成后可「存入出题台」归档'
+                      : '出题或讨论材料 · 可引用校本资料 · 生成后可「存入出题台」'
                     : mode === 'counsel'
                       ? '想聊聊最近的学习压力或心情…也可附上作业截图（仅你可见）'
-                      : mode === 'question_gen'
-                        ? '例如：二次函数选择题 3 道 · 可附讲义文件'
+                      : mode === 'question_gen' || mode === 'practice'
+                        ? '例如：按校本讲义出 3 道题并带我做 · 可点「引用校本资料」'
                         : mode === 'study_plan'
                           ? '例如：两周二次函数巩固，每天 15 分钟'
-                          : '输入消息或添加文件，Enter 发送 · Shift+Enter 换行'
+                          : '输入消息、引用校本资料或添加文件，Enter 发送'
                 }
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -387,7 +397,8 @@ export function ChatPage() {
           display: grid;
           grid-template-columns: 232px minmax(0, 1fr);
           gap: 0;
-          min-height: calc(100vh - var(--header-h) - 1.5rem);
+          height: calc(100vh - var(--header-h) - 1.95rem);
+          min-height: 0;
           border: 1px solid var(--line);
           background: #fff;
           overflow: hidden;
@@ -397,7 +408,7 @@ export function ChatPage() {
         }
         .chat-side {
           display: grid;
-          grid-template-rows: auto 1fr;
+          grid-template-rows: auto minmax(0, 1fr);
           min-height: 0;
           overflow: hidden;
           background: linear-gradient(180deg, #f3f7f5 0%, #eef3f0 100%);
@@ -426,6 +437,7 @@ export function ChatPage() {
           display: grid;
           gap: 0.2rem;
           align-content: start;
+          min-height: 0;
         }
         .side-item {
           display: grid;
@@ -468,15 +480,17 @@ export function ChatPage() {
           padding: 0.05rem 0.28rem;
         }
         .chat-main {
-          display: grid;
-          grid-template-rows: auto auto 1fr;
+          display: flex;
+          flex-direction: column;
           min-width: 0;
           min-height: 0;
+          height: 100%;
           background:
             radial-gradient(ellipse 80% 50% at 50% -10%, rgba(15, 107, 92, 0.06), transparent 55%),
             #f7f9f8;
         }
         .chat__toolbar {
+          flex-shrink: 0;
           display: flex;
           flex-wrap: wrap;
           justify-content: space-between;
@@ -495,6 +509,7 @@ export function ChatPage() {
           gap: 0.45rem;
         }
         .pack-banner {
+          flex-shrink: 0;
           display: flex;
           flex-wrap: wrap;
           align-items: center;
@@ -523,14 +538,14 @@ export function ChatPage() {
           font-size: 0.74rem;
         }
         .chat__stage {
-          display: grid;
-          grid-template-rows: 1fr auto;
+          flex: 1;
           min-height: 0;
-          height: auto;
-          max-height: calc(100vh - var(--header-h) - 5.6rem);
+          display: grid;
+          grid-template-rows: minmax(0, 1fr) auto;
           overflow: hidden;
         }
         .chat__stream {
+          min-height: 0;
           overflow: auto;
           display: flex;
           flex-direction: column;
@@ -601,6 +616,7 @@ export function ChatPage() {
           background: var(--accent-soft);
         }
         .chat__composer {
+          flex-shrink: 0;
           padding: 0.65rem 1rem 0.85rem;
           background: linear-gradient(180deg, transparent, rgba(247,249,248,0.95) 30%);
           max-width: 820px;
@@ -613,6 +629,9 @@ export function ChatPage() {
           box-shadow: 0 8px 24px rgba(20, 28, 25, 0.05);
           display: grid;
           transition: border-color 0.12s ease, box-shadow 0.12s ease;
+        }
+        .composer-lib {
+          padding: 0.45rem 0.55rem 0;
         }
         .composer-shell:focus-within {
           border-color: var(--accent);
@@ -704,15 +723,13 @@ export function ChatPage() {
         @media (max-width: 900px) {
           .chat {
             grid-template-columns: 1fr;
-            min-height: auto;
+            grid-template-rows: auto minmax(0, 1fr);
+            height: calc(100vh - var(--header-h) - 1.6rem);
           }
           .chat-side {
-            max-height: 150px;
+            max-height: 132px;
             border-right: 0;
             border-bottom: 1px solid var(--line);
-          }
-          .chat__stage {
-            height: calc(100vh - var(--header-h) - 13rem);
           }
         }
       `}</style>

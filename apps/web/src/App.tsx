@@ -6,6 +6,7 @@ import { useApp } from './context/AppContext'
 import { ConsentsPage } from './pages/admin/ConsentsPage'
 import { AuditPage } from './pages/admin/AuditPage'
 import { AnalyticsPage } from './pages/admin/AnalyticsPage'
+import { MaterialsPage } from './pages/admin/MaterialsPage'
 import { OrgsPage } from './pages/admin/OrgsPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { EntryPage } from './pages/EntryPage'
@@ -71,6 +72,7 @@ export default function App() {
         >
           <Route path="users" element={<UsersPage />} />
           <Route path="orgs" element={<OrgsPage />} />
+          <Route path="materials" element={<MaterialsPage />} />
           <Route path="consents" element={<ConsentsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="audit" element={<AuditPage />} />
