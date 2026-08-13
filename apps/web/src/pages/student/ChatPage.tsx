@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ChatBubble, type PackSaveActions } from '../../components/ChatBubble'
+import { ChatBubble, type PackSaveActions, type SchemeSaveActions } from '../../components/ChatBubble'
 import { FileAttachControl } from '../../components/FileAttachControl'
 import { ModeChips } from '../../components/ModeChips'
 import { PrivateBadge } from '../../components/PrivateBadge'
 import { SharedMaterialPicker } from '../../components/SharedMaterialPicker'
 import { useApp } from '../../context/AppContext'
 import { mockInvoke } from '../../mock/agent'
-import type { ChatAttachment, QuestionItem } from '../../types'
+import type { ChatAttachment, QuestionItem, SupportSchemeBody } from '../../types'
 
 export function ChatPage() {
   const {
@@ -26,6 +26,12 @@ export function ChatPage() {
     chatPackId,
     clearChatPack,
     attachPackToChat,
+    supportSchemes,
+    createSupportScheme,
+    appendSchemeVersion,
+    chatSchemeId,
+    clearChatScheme,
+    attachSchemeToChat,
   } = useApp()
   const navigate = useNavigate()
   const [text, setText] = useState('')
@@ -39,6 +45,10 @@ export function ChatPage() {
   const chatPack = useMemo(
     () => (chatPackId ? questionPacks.find((p) => p.id === chatPackId) ?? null : null),
     [chatPackId, questionPacks],
+  )
+  const chatScheme = useMemo(
+    () => (chatSchemeId ? supportSchemes.find((s) => s.id === chatSchemeId) ?? null : null),
+    [chatSchemeId, supportSchemes],
   )
 
   useEffect(() => {
@@ -86,6 +96,50 @@ export function ChatPage() {
     navigate,
   ])
 
+  const schemeSave = useMemo<SchemeSaveActions | undefined>(() => {
+    if (!isTeacher) return undefined
+    return {
+      onSaveScheme: (title: string, body: SupportSchemeBody, meta) => {
+        const targetId = chatSchemeId || meta?.schemeId
+        if (targetId && supportSchemes.some((s) => s.id === targetId)) {
+          const next = appendSchemeVersion({
+            schemeId: targetId,
+            body,
+            source: 'chat_save',
+            note: '对话整理后存入',
+            title,
+          })
+          if (next) {
+            attachSchemeToChat(next.id)
+            setPackFlash(`已写入方案「${next.title}」v${next.currentVersion}`)
+          }
+        } else {
+          const scheme = createSupportScheme({
+            title: title || '对话整理 · 学情方案',
+            scope: 'group',
+            studentIds: [],
+            studentNames: [],
+            basedOn: { weakTags: body.focusModules },
+            body,
+            source: 'chat_save',
+            note: '由助手对话整理新建',
+          })
+          attachSchemeToChat(scheme.id)
+          setPackFlash(`已新建方案「${scheme.title}」v1`)
+        }
+        navigate('/teacher/schemes')
+      },
+    }
+  }, [
+    isTeacher,
+    chatSchemeId,
+    supportSchemes,
+    appendSchemeVersion,
+    createSupportScheme,
+    attachSchemeToChat,
+    navigate,
+  ])
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     const trimmed = text.trim()
@@ -95,13 +149,18 @@ export function ChatPage() {
       isTeacher && chatPack
         ? `\n\n（当前关联题包：${chatPack.title} v${chatPack.currentVersion}，请在此基础上改题）`
         : ''
+    const schemeHint =
+      isTeacher && chatScheme
+        ? `\n\n（当前关联学情方案：${chatScheme.title} v${chatScheme.currentVersion}，请在此基础上完善）`
+        : ''
     const userMsg = {
       id: `u-${Date.now()}`,
       role: 'user' as const,
       content:
         (trimmed ||
           (attached.length ? `（已附上 ${attached.length} 个文件，请结合材料回答）` : '')) +
-        packHint,
+        packHint +
+        schemeHint,
       createdAt: new Date().toISOString(),
       attachments: attached.length ? attached : undefined,
       private: mode === 'counsel',
@@ -117,16 +176,19 @@ export function ChatPage() {
         mode,
         attachments: attached,
       })
-      // Tag AI question packs with active studio pack for save-as-version
-      if (
-        isTeacher &&
-        chatPack &&
-        reply.payload?.type === 'question_set'
-      ) {
+      if (isTeacher && chatPack && reply.payload?.type === 'question_set') {
         reply.payload = {
           ...reply.payload,
           packId: chatPack.id,
           packVersion: chatPack.currentVersion,
+        }
+      }
+      if (isTeacher && chatScheme && reply.payload?.type === 'support_scheme') {
+        reply.payload = {
+          ...reply.payload,
+          schemeId: chatScheme.id,
+          schemeVersion: chatScheme.currentVersion,
+          title: reply.payload.title || chatScheme.title,
         }
       }
       setMessages((prev) => [...prev, reply])
@@ -196,7 +258,7 @@ export function ChatPage() {
             </h1>
             <p className="page-desc">
               {isTeacher
-                ? '讨论后把题包存入出题台；同一题包保留修改历史。不含学生支持侧。'
+                ? '题包可存出题台，学情方案可存方案库，均保留版本。'
                 : activeMeta
                   ? `续聊 · ${activeMeta.lastActiveAt}`
                   : '练习、出题、学习计划或聊聊心情'}
@@ -204,9 +266,14 @@ export function ChatPage() {
           </div>
           <div className="chat__toolbar-actions">
             {isTeacher ? (
-              <Link className="btn btn-sm" to="/teacher/studio">
-                打开出题台
-              </Link>
+              <>
+                <Link className="btn btn-sm" to="/teacher/studio">
+                  出题台
+                </Link>
+                <Link className="btn btn-sm" to="/teacher/schemes">
+                  方案库
+                </Link>
+              </>
             ) : null}
             <ModeChips value={mode} onChange={setMode} teacher={isTeacher} />
           </div>
@@ -225,11 +292,26 @@ export function ChatPage() {
           </div>
         ) : null}
 
+        {isTeacher && chatScheme ? (
+          <div className="pack-banner" role="status">
+            <span>
+              当前方案：<strong>{chatScheme.title}</strong> · v{chatScheme.currentVersion}
+            </span>
+            <Link to="/teacher/schemes">管理</Link>
+            <button type="button" className="pack-banner__x" onClick={() => clearChatScheme()}>
+              解除关联
+            </button>
+          </div>
+        ) : null}
+
         {packFlash ? (
           <div className="pack-banner pack-banner--ok" role="status">
             <span>{packFlash}</span>
-            <Link to="/teacher/studio" onClick={() => setPackFlash(null)}>
-              查看出题台
+            <Link
+              to={packFlash.includes('方案') ? '/teacher/schemes' : '/teacher/studio'}
+              onClick={() => setPackFlash(null)}
+            >
+              查看
             </Link>
             <button type="button" className="pack-banner__x" onClick={() => setPackFlash(null)}>
               关闭
@@ -247,16 +329,16 @@ export function ChatPage() {
                 </div>
                 {isTeacher ? (
                   <>
-                    <h2>和 AI 完善题包</h2>
+                    <h2>完善题包或学情方案</h2>
                     <p>
-                      可先在出题台生成题包并「添加到对话」；也可在这里出题，再点「存入出题台」归档与回溯。
+                      出题台 / 班级学情可「添加到对话」；聊完后「存入出题台」或「存入方案库」写版本。
                     </p>
                     <div className="chat-empty__hints">
                       {(
                         [
                           ['按这份讲义出 3 道中档题', 'question_gen'],
-                          ['把第 2 题改成填空并提高难度', 'question_gen'],
-                          ['整理成一套可考试审阅的题包', 'question_gen'],
+                          ['根据薄弱点写两周补差方案', 'auto'],
+                          ['把方案加上周末错题复盘', 'auto'],
                         ] as const
                       ).map(([label, m]) => (
                         <button
@@ -304,7 +386,12 @@ export function ChatPage() {
             ) : null}
 
             {messages.map((m) => (
-              <ChatBubble key={m.id} message={m} packSave={packSave} />
+              <ChatBubble
+                key={m.id}
+                message={m}
+                packSave={packSave}
+                schemeSave={schemeSave}
+              />
             ))}
             {busy ? (
               <div className="typing-row">

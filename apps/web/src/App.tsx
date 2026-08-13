@@ -14,6 +14,7 @@ import { ChatPage } from './pages/student/ChatPage'
 import { HistoryPage } from './pages/student/HistoryPage'
 import { MePage } from './pages/student/MePage'
 import { ClassPage } from './pages/teacher/ClassPage'
+import { SchemesPage } from './pages/teacher/SchemesPage'
 import { StudioPage } from './pages/teacher/StudioPage'
 import { TeacherChatPage } from './pages/teacher/TeacherChatPage'
 import type { Role } from './types'
@@ -59,6 +60,7 @@ export default function App() {
         >
           <Route path="studio" element={<StudioPage />} />
           <Route path="class" element={<ClassPage />} />
+          <Route path="schemes" element={<SchemesPage />} />
           <Route path="chat" element={<TeacherChatPage />} />
           <Route index element={<Navigate to="studio" replace />} />
         </Route>

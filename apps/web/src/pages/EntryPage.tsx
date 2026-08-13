@@ -2,13 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BrandMark } from '../components/BrandMark'
 import { useApp } from '../context/AppContext'
-import { demoAccounts, roleHome } from '../mock/auth'
+import { roleHome } from '../mock/auth'
 
 export function EntryPage() {
   const { login, role, currentUser } = useApp()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('linxiao@student.demo')
-  const [password, setPassword] = useState('student123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -38,17 +38,15 @@ export function EntryPage() {
         <div className="orb orb-a" />
         <div className="orb orb-b" />
         <div className="login-copy">
-          <p className="eyebrow">Student-first support AI</p>
+          <p className="eyebrow">AIFOREC</p>
           <h1>学得更稳，也照顾好心情。</h1>
-          <p>
-            AIFOREC 把练习巩固、出题协助与学业情绪支持放在同一套系统里——支持侧默认私密，老师只看授权学情。
-          </p>
+          <p>练习巩固、个性化出题，以及学业压力下的倾诉空间。</p>
         </div>
       </div>
 
       <section className="login-card surface">
         <BrandMark size="lg" />
-        <p className="login-card__lead">使用学校账号登录，系统将按角色进入对应工作台。</p>
+        <p className="login-card__lead">使用学校账号登录。</p>
 
         <form className="login-form" onSubmit={onSubmit}>
           <label className="field-label">
@@ -78,27 +76,6 @@ export function EntryPage() {
             {loading ? '登录中…' : '进入 AIFOREC'}
           </button>
         </form>
-
-        <div className="demo-box">
-          <div className="demo-title">演示账号</div>
-          <div className="demo-list">
-            {demoAccounts.map((a) => (
-              <button
-                key={a.email}
-                type="button"
-                className="demo-chip"
-                onClick={() => {
-                  setEmail(a.email)
-                  setPassword(a.password)
-                  setError('')
-                }}
-              >
-                <strong>{a.role}</strong>
-                <span>{a.email}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </section>
 
       <style>{`
@@ -189,34 +166,6 @@ export function EntryPage() {
           margin: 0;
           color: var(--danger);
           font-size: 0.88rem;
-        }
-        .demo-box { margin-top: 1.25rem; }
-        .demo-title {
-          font-size: 0.78rem;
-          color: var(--ink-faint);
-          margin-bottom: 0.5rem;
-          font-weight: 600;
-        }
-        .demo-list { display: grid; gap: 0.45rem; }
-        .demo-chip {
-          display: grid;
-          gap: 0.1rem;
-          text-align: left;
-          border: 1px solid var(--line);
-          background: #fafbfa;
-          border-radius: 8px;
-          padding: 0.65rem 0.8rem;
-          cursor: pointer;
-          transition: 0.16s ease;
-        }
-        .demo-chip:hover {
-          border-color: rgba(15,107,92,0.35);
-          background: var(--accent-soft);
-        }
-        .demo-chip strong { font-size: 0.82rem; }
-        .demo-chip span {
-          font-size: 0.78rem;
-          color: var(--ink-muted);
         }
         @keyframes softIn {
           from { opacity: 0; transform: translateY(10px); }

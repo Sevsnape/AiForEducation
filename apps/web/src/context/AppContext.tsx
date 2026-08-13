@@ -14,6 +14,7 @@ import {
   mockSharedMaterials,
   mockStudyPlan,
   mockSupport,
+  mockSupportSchemes,
   mockThreads,
   mockUserConsents,
   mockUsers,
@@ -33,6 +34,10 @@ import type {
   SharedMaterial,
   StudyPlan,
   SupportProfile,
+  SupportScheme,
+  SupportSchemeBody,
+  SupportSchemeScope,
+  SupportSchemeSource,
   ThreadSummary,
 } from '../types'
 import { welcomeStudent, welcomeTeacher } from '../mock/data'
@@ -53,6 +58,25 @@ type AppendVersionInput = {
   note?: string
   subject?: string
   knowledge?: string
+  title?: string
+}
+
+type CreateSchemeInput = {
+  title: string
+  scope: SupportSchemeScope
+  studentIds: string[]
+  studentNames: string[]
+  basedOn: SupportScheme['basedOn']
+  body: SupportSchemeBody
+  source: SupportSchemeSource
+  note?: string
+}
+
+type AppendSchemeVersionInput = {
+  schemeId: string
+  body: SupportSchemeBody
+  source: SupportSchemeSource
+  note?: string
   title?: string
 }
 
@@ -87,6 +111,13 @@ type AppContextValue = {
   chatPackId: string | null
   attachPackToChat: (packId: string) => void
   clearChatPack: () => void
+  /** Teacher: versioned support schemes from class analytics */
+  supportSchemes: SupportScheme[]
+  createSupportScheme: (input: CreateSchemeInput) => SupportScheme
+  appendSchemeVersion: (input: AppendSchemeVersionInput) => SupportScheme | null
+  chatSchemeId: string | null
+  attachSchemeToChat: (schemeId: string) => void
+  clearChatScheme: () => void
   /** Admin school shared library */
   sharedMaterials: SharedMaterial[]
   upsertSharedMaterial: (
@@ -122,6 +153,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(mockStudyPlan)
   const [questionPacks, setQuestionPacks] = useState<QuestionPack[]>(mockQuestionPacks)
   const [chatPackId, setChatPackId] = useState<string | null>(null)
+  const [supportSchemes, setSupportSchemes] = useState<SupportScheme[]>(mockSupportSchemes)
+  const [chatSchemeId, setChatSchemeId] = useState<string | null>(null)
   const [sharedMaterials, setSharedMaterials] = useState<SharedMaterial[]>(mockSharedMaterials)
   const [users, setUsers] = useState(mockUsers)
   const [busy, setBusy] = useState(false)
@@ -247,12 +280,79 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearChatPack = useCallback(() => setChatPackId(null), [])
 
+  const createSupportScheme = useCallback((input: CreateSchemeInput) => {
+    const now = stamp()
+    const scheme: SupportScheme = {
+      id: `ss-${Date.now()}`,
+      title: input.title,
+      scope: input.scope,
+      studentIds: input.studentIds,
+      studentNames: input.studentNames,
+      basedOn: input.basedOn,
+      createdAt: now,
+      updatedAt: now,
+      currentVersion: 1,
+      versions: [
+        {
+          id: `ssv-${Date.now()}`,
+          version: 1,
+          createdAt: now,
+          source: input.source,
+          note: input.note,
+          body: input.body,
+        },
+      ],
+    }
+    setSupportSchemes((prev) => [scheme, ...prev])
+    return scheme
+  }, [])
+
+  const appendSchemeVersion = useCallback((input: AppendSchemeVersionInput) => {
+    let result: SupportScheme | null = null
+    setSupportSchemes((prev) => {
+      const idx = prev.findIndex((s) => s.id === input.schemeId)
+      if (idx < 0) return prev
+      const s = prev[idx]
+      const now = stamp()
+      const version = s.currentVersion + 1
+      const next: SupportScheme = {
+        ...s,
+        title: input.title || s.title,
+        updatedAt: now,
+        currentVersion: version,
+        versions: [
+          ...s.versions,
+          {
+            id: `ssv-${Date.now()}`,
+            version,
+            createdAt: now,
+            source: input.source,
+            note: input.note,
+            body: input.body,
+          },
+        ],
+      }
+      result = next
+      const copy = [...prev]
+      copy[idx] = next
+      return copy
+    })
+    return result
+  }, [])
+
+  const attachSchemeToChat = useCallback((schemeId: string) => {
+    setChatSchemeId(schemeId)
+  }, [])
+
+  const clearChatScheme = useCallback(() => setChatSchemeId(null), [])
+
   const logout = useCallback(() => {
     setRole(null)
     setCurrentUser(null)
     setMessages([])
     setMode('auto')
     setChatPackId(null)
+    setChatSchemeId(null)
   }, [])
 
   const login = useCallback(
@@ -266,6 +366,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setRole(result.role)
       setMode(result.role === 'teacher' ? 'question_gen' : 'auto')
       setChatPackId(null)
+      setChatSchemeId(null)
 
       if (result.role === 'admin') {
         setMessages([])
@@ -315,6 +416,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       chatPackId,
       attachPackToChat,
       clearChatPack,
+      supportSchemes,
+      createSupportScheme,
+      appendSchemeVersion,
+      chatSchemeId,
+      attachSchemeToChat,
+      clearChatScheme,
       sharedMaterials,
       upsertSharedMaterial,
       setSharedMaterialStatus,
@@ -346,6 +453,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       chatPackId,
       attachPackToChat,
       clearChatPack,
+      supportSchemes,
+      createSupportScheme,
+      appendSchemeVersion,
+      chatSchemeId,
+      attachSchemeToChat,
+      clearChatScheme,
       sharedMaterials,
       upsertSharedMaterial,
       setSharedMaterialStatus,

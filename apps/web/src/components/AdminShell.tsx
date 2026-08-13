@@ -48,7 +48,7 @@ export function AdminShell() {
           >
             {collapsed ? '⟩' : '⟨'}
           </button>
-          <BrandMark subtitle="管理后台" />
+          <BrandMark subtitle="校园管理" />
         </div>
         <div className="topbar__right">
           <div className="topbar__user">
@@ -86,7 +86,7 @@ export function AdminShell() {
           </nav>
           {!collapsed ? (
             <p className="admin-sidebar__hint">
-              同意策略由管理员配置；学情分析仅含学习侧，不含心情原文。
+              学情分析仅含练习与提问数据，不含学生心情对话原文。
             </p>
           ) : null}
         </aside>

@@ -5,7 +5,7 @@ export function AuditPage() {
     <section className="audit">
       <header>
         <h1 className="page-title">审计日志</h1>
-        <p className="page-desc">门禁拒绝、危机短路、账号启停等。不展示心理原文。</p>
+        <p className="page-desc">记录权限拒绝、危机处理、账号启停等操作。</p>
       </header>
       <div className="surface table-wrap">
         <table>
@@ -23,9 +23,7 @@ export function AuditPage() {
               <tr key={a.id}>
                 <td>{a.at}</td>
                 <td>{a.actor}</td>
-                <td>
-                  <code>{a.action}</code>
-                </td>
+                <td>{a.action}</td>
                 <td>{a.resource}</td>
                 <td className="muted">{a.purpose}</td>
               </tr>

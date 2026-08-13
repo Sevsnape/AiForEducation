@@ -17,7 +17,7 @@ export function UsersPage() {
     email: '',
     password: 'Pass1234',
     role: 'student' as Role,
-    orgName: '示例中学',
+    orgName: '育才中学',
     className: '初二(3)班',
   })
 

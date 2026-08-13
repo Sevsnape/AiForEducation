@@ -34,6 +34,7 @@ export type Intent =
   | 'diagnose'
   | 'safety'
   | 'study_plan'
+  | 'support_scheme'
 
 export type ChatAttachment = {
   id: string
@@ -51,7 +52,13 @@ export type ChatMessage = {
   private?: boolean
   createdAt: string
   attachments?: ChatAttachment[]
-  payload?: QuestionPayload | PracticePayload | SafetyPayload | StudyPlanPayload | null
+  payload?:
+    | QuestionPayload
+    | PracticePayload
+    | SafetyPayload
+    | StudyPlanPayload
+    | SupportSchemePayload
+    | null
 }
 
 export type QuestionItem = {
@@ -120,6 +127,52 @@ export type StudyPlan = {
 export type StudyPlanPayload = {
   type: 'study_plan'
   plan: StudyPlan
+}
+
+/** Teacher: intervention / support scheme based on shared learning analytics */
+export type SupportSchemeSource = 'class_gen' | 'chat_save' | 'manual_edit'
+export type SupportSchemeScope = 'student' | 'class' | 'group'
+
+export type SupportSchemeBody = {
+  summary: string
+  goals: string[]
+  actions: string[]
+  focusModules: string[]
+  horizon?: string
+}
+
+export type SupportSchemeVersion = {
+  id: string
+  version: number
+  createdAt: string
+  source: SupportSchemeSource
+  note?: string
+  body: SupportSchemeBody
+}
+
+export type SupportScheme = {
+  id: string
+  title: string
+  scope: SupportSchemeScope
+  studentIds: string[]
+  studentNames: string[]
+  basedOn: {
+    accuracy?: number
+    weakTags: string[]
+    hotspotModules?: string[]
+  }
+  createdAt: string
+  updatedAt: string
+  currentVersion: number
+  versions: SupportSchemeVersion[]
+}
+
+export type SupportSchemePayload = {
+  type: 'support_scheme'
+  title: string
+  body: SupportSchemeBody
+  schemeId?: string
+  schemeVersion?: number
 }
 
 export type ThreadStatus = 'active' | 'archived'

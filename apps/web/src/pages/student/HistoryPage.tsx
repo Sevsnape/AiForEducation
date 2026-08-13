@@ -109,7 +109,7 @@ export function HistoryPage() {
 
   function deleteMany(ids: string[]) {
     if (!ids.length) return
-    if (!confirm(`确定删除 ${ids.length} 条对话？删除后可能触发画像重摘要。`)) return
+    if (!confirm(`确定删除 ${ids.length} 条对话？删除后可能影响学习印象的更新。`)) return
     setThreads((list) => list.filter((t) => !ids.includes(t.id)))
     setSelectedIds(new Set())
   }
@@ -119,7 +119,7 @@ export function HistoryPage() {
       {
         id: `hist-${t.id}`,
         role: 'assistant',
-        content: `已打开历史会话「${t.title}」。后续接入后端后将加载完整消息；当前为 Mock 续聊入口。`,
+        content: `已打开历史会话「${t.title}」。可以继续聊。`,
         intent: t.primaryIntent === 'mixed' ? 'general' : t.primaryIntent,
         private: t.privateHint,
         createdAt: new Date().toISOString(),
@@ -415,7 +415,7 @@ export function HistoryPage() {
                       type="button"
                       className="btn btn-ghost btn-sm"
                       onClick={() =>
-                        alert('Mock：将请求后端重新生成本阶段总结（summary_graph）。')
+                        alert('正在重新生成本阶段总结…')
                       }
                     >
                       重新生成
@@ -425,7 +425,7 @@ export function HistoryPage() {
 
                 <div className="weekly-grid">
                   <article className="history-card surface">
-                    <div className="weekly__label">学习侧</div>
+                    <div className="weekly__label">学习</div>
                     <h3>本阶段学习</h3>
                     <p>{selectedStage.learningText}</p>
                     {selectedStage.practiceCount != null ? (
@@ -440,7 +440,7 @@ export function HistoryPage() {
                   <article className="history-card surface">
                     <div className="weekly__label">仅你可见</div>
                     <h3>
-                      本阶段支持 <PrivateBadge />
+                      本阶段心情与支持 <PrivateBadge />
                     </h3>
                     <p>{selectedStage.supportText}</p>
                   </article>
@@ -457,8 +457,8 @@ export function HistoryPage() {
 
                 {stageList.filter((g) => g.status !== 'archived').length >= 2 ? (
                   <div className="compare surface">
-                    <h3>与相邻阶段对比（学习侧）</h3>
-                    <p className="muted tiny">帮助看清正确率与题量变化；不含支持原文。</p>
+                    <h3>与相邻阶段对比</h3>
+                    <p className="muted tiny">帮助看清正确率与题量变化。</p>
                     <table>
                       <thead>
                         <tr>
@@ -488,7 +488,7 @@ export function HistoryPage() {
                 ) : null}
               </>
             ) : (
-              <p className="muted">暂无成长阶段。系统会按周期自动生成，也可在对话后触发总结。</p>
+              <p className="muted">暂无成长阶段。会按周期自动生成，也可在对话后触发总结。</p>
             )}
           </div>
         </div>
@@ -505,7 +505,7 @@ export function HistoryPage() {
             <p className="muted">
               薄弱点：{learning.weakKnowledge.map((w) => w.tag).join('、') || '暂无'}
             </p>
-            <p className="muted tiny">删除或归档大量对话后，系统可能重算本印象。</p>
+            <p className="muted tiny">删除或归档大量对话后，可能重算本印象。</p>
           </article>
           <article className="history-card surface">
             <h3>
@@ -513,7 +513,7 @@ export function HistoryPage() {
             </h3>
             <p>{support.safeSummary}</p>
             <p className="muted">压力主题：{support.stressThemes.join('、')}</p>
-            <p className="muted">老师端不会展示本块内容。</p>
+            <p className="muted">老师不会看到本块内容。</p>
           </article>
         </div>
       ) : null}

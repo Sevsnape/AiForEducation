@@ -2,7 +2,7 @@ export function OrgsPage() {
   const orgs = [
     {
       id: 'org-1',
-      name: '示例中学',
+      name: '育才中学',
       classes: [
         { id: 'c-1', name: '初二(3)班', teachers: ['王老师'], students: 42 },
         { id: 'c-2', name: '初二(1)班', teachers: ['李老师'], students: 40 },
@@ -14,7 +14,7 @@ export function OrgsPage() {
     <section className="orgs">
       <header>
         <h1 className="page-title">组织与班级</h1>
-        <p className="page-desc">学校租户与班级成员关系是老师查看学情的边界。</p>
+        <p className="page-desc">管理学校与班级，作为学情可见范围的依据。</p>
       </header>
       {orgs.map((org) => (
         <article key={org.id} className="org">

@@ -191,7 +191,7 @@ export function MaterialsPage() {
             </select>
           </label>
           <label className="span-2">
-            文件名（Mock：不实际上传）
+            文件名
             <input
               className="field"
               value={form.fileName}

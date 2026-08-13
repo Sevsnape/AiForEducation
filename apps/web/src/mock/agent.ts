@@ -15,6 +15,7 @@ function detectIntent(text: string, mode: ClientMode, role: Role): Intent {
   if (/自杀|自残|不想活/.test(text)) return 'safety'
   if (/焦虑|难过|压力|心情|害怕|紧张/.test(text)) return 'counsel'
   if (/学习计划|定计划|周计划|复习计划|帮我规划/.test(text)) return 'study_plan'
+  if (/学情方案|辅导方案|补差方案|分层方案|针对.*方案/.test(text)) return 'support_scheme'
   if (/出题|组卷|出几道|根据.*文件|按.*材料/.test(text)) return 'question_gen'
   if (/练习|刷题|巩固|错题/.test(text)) return 'practice'
   if (/薄弱|诊断|哪里不会/.test(text)) return 'diagnose'
@@ -36,7 +37,7 @@ export async function mockInvoke(input: {
     return {
       id: id(),
       role: 'assistant',
-      content: '当前账号无权进入学生心理支持会话。教师端请使用出题与授权学情功能。',
+      content: '当前账号无法进入学生心情支持会话。请使用出题与授权学情相关功能。',
       intent: 'safety',
       createdAt: new Date().toISOString(),
     }
@@ -47,7 +48,7 @@ export async function mockInvoke(input: {
       id: id(),
       role: 'assistant',
       content:
-        '我很关心你现在的状态。若你感到危险或有伤害自己的想法，请立刻联系身边可信赖的人，或寻求当地紧急求助资源。我可以继续陪你慢慢说，但现在不会安排练习或出题。（本系统提供学业情绪支持，不能替代专业医疗。）',
+        '我很关心你现在的状态。若你感到危险或有伤害自己的想法，请立刻联系身边可信赖的人，或寻求当地紧急求助资源。我可以继续陪你慢慢说，但现在不会安排练习或出题。这里提供的是学业情绪支持，不能替代专业医疗。',
       intent: 'safety',
       private: true,
       createdAt: new Date().toISOString(),
@@ -66,7 +67,7 @@ export async function mockInvoke(input: {
     return {
       id: id(),
       role: 'assistant',
-      content: `${basedOn}生成示例题（前端 Mock，未真正解析文件）。可调整难度后再次出题。`,
+      content: `${basedOn}生成了几道练习题。可调整难度后再次出题。`,
       intent: 'question_gen',
       createdAt: new Date().toISOString(),
       payload: {
@@ -77,9 +78,9 @@ export async function mockInvoke(input: {
               ? `根据材料要点，写出一个与「${fileNames}」相关的关键结论。`
               : '二次函数 y=x²-2x-3 的对称轴是？',
             type: 'short_answer',
-            answer: fileNames ? '（Mock：依材料）' : 'x=1',
+            answer: fileNames ? '（依材料要点作答）' : 'x=1',
             explanation: fileNames
-              ? '接入后端后将抽取文件知识点并质检。'
+              ? '抓住材料中的关键结论再落笔。'
               : '对称轴 x=-b/(2a)=2/2=1。',
             knowledgeTags: fileNames ? ['材料仿写'] : ['二次函数'],
             difficulty: 3,
@@ -102,8 +103,8 @@ export async function mockInvoke(input: {
       id: id(),
       role: 'assistant',
       content: fileNames
-        ? `已看到你附上的「${fileNames}」。我们先做一道与材料相关的短练习（Mock）。`
-        : '我们先做一道短练习。答完可以继续（后续将接后端 interrupt 续跑）。',
+        ? `已看到你附上的「${fileNames}」。我们先做一道与材料相关的短练习。`
+        : '我们先做一道短练习。答完可以继续。',
       intent: 'practice',
       createdAt: new Date().toISOString(),
       payload: {
@@ -141,7 +142,7 @@ export async function mockInvoke(input: {
       id: id(),
       role: 'assistant',
       content:
-        '根据当前示例学情，相对薄弱的点包括：二次函数、应用题审题。要不要针对「二次函数」做一组短练习？',
+        '根据近期练习与提问，相对薄弱的点包括：二次函数、应用题审题。要不要针对「二次函数」做一组短练习？',
       intent: 'diagnose',
       createdAt: new Date().toISOString(),
     }
@@ -172,13 +173,41 @@ export async function mockInvoke(input: {
     }
   }
 
+  if (intent === 'support_scheme') {
+    const body = {
+      summary: '基于已授权学情的补差草案：聚焦薄弱模块，控制每日可完成量。',
+      goals: ['薄弱模块正确率提升约 10%', '能独立完成关键步骤'],
+      actions: ['每天 10–15 分钟短练', '隔天一道变式题', '周末错题复盘'],
+      focusModules: ['二次函数'],
+      horizon: '14 天',
+    }
+    return {
+      id: id(),
+      role: 'assistant',
+      content:
+        input.role === 'teacher'
+          ? '已按学情讨论整理一版辅导方案草案。可改目标与行动；满意后点「存入方案库」归档并记版本。'
+          : '学情方案由老师基于授权数据制定；你仍可用「学习计划」模式与我一起定个人节奏。',
+      intent: 'support_scheme',
+      createdAt: new Date().toISOString(),
+      payload:
+        input.role === 'teacher'
+          ? {
+              type: 'support_scheme' as const,
+              title: '对话整理 · 学情方案',
+              body,
+            }
+          : null,
+    }
+  }
+
   return {
     id: id(),
     role: 'assistant',
     content: fileNames
       ? `已收到附件「${fileNames}」。你可以继续提问、要求讲解，或切换到「出题 / 练习」模式基于材料生成题。`
       : input.role === 'teacher'
-        ? '可以直接描述「学科 + 知识点 + 题型 + 数量」，附上讲义文件，或使用出题台按文件组卷。'
+        ? '可以直接描述「学科 + 知识点 + 题型 + 数量」，讨论学情方案，或使用出题台 / 方案库。'
         : '你可以选择下方模式：练习、出题、学习计划，或聊聊心情；也可以添加文件一起问。',
     intent: 'general',
     createdAt: new Date().toISOString(),

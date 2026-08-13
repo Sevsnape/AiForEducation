@@ -1,4 +1,4 @@
-import type { ChatMessage, Intent, QuestionItem } from '../types'
+import type { ChatMessage, Intent, QuestionItem, SupportSchemeBody } from '../types'
 import { PrivateBadge } from './PrivateBadge'
 
 const intentZh: Partial<Record<Intent, string>> = {
@@ -6,6 +6,7 @@ const intentZh: Partial<Record<Intent, string>> = {
   question_gen: '出题',
   counsel: '心情',
   study_plan: '学习计划',
+  support_scheme: '学情方案',
   diagnose: '诊断',
   general: '对话',
   safety: '安全',
@@ -15,17 +16,29 @@ export type PackSaveActions = {
   onSaveToStudio: (questions: QuestionItem[], meta?: { packId?: string; packVersion?: number }) => void
 }
 
+export type SchemeSaveActions = {
+  onSaveScheme: (
+    title: string,
+    body: SupportSchemeBody,
+    meta?: { schemeId?: string; schemeVersion?: number },
+  ) => void
+}
+
 export function ChatBubble({
   message,
   packSave,
+  schemeSave,
 }: {
   message: ChatMessage
   packSave?: PackSaveActions
+  schemeSave?: SchemeSaveActions
 }) {
   const mine = message.role === 'user'
   const questionSet =
     message.payload?.type === 'question_set' ? message.payload : null
   const questions = questionSet?.questions ?? null
+  const schemePayload =
+    message.payload?.type === 'support_scheme' ? message.payload : null
 
   return (
     <article className={`bubble-row ${mine ? 'bubble-row--mine' : 'bubble-row--ai'}`}>
@@ -44,6 +57,9 @@ export function ChatBubble({
             ) : null}
             {questionSet?.packId ? (
               <span className="bubble__intent">题包 v{questionSet.packVersion ?? '?'}</span>
+            ) : null}
+            {schemePayload?.schemeId ? (
+              <span className="bubble__intent">方案 v{schemePayload.schemeVersion ?? '?'}</span>
             ) : null}
           </header>
         ) : null}
@@ -67,6 +83,26 @@ export function ChatBubble({
                 <div className="payload__hint">解析：{q.explanation}</div>
               </div>
             ))}
+          </div>
+        ) : null}
+        {schemePayload ? (
+          <div className="payload">
+            <div className="payload__item">
+              <div className="payload__label">{schemePayload.title}</div>
+              <div>{schemePayload.body.summary}</div>
+              {schemePayload.body.horizon ? (
+                <div className="payload__hint">周期：{schemePayload.body.horizon}</div>
+              ) : null}
+              <div className="payload__hint">目标：{schemePayload.body.goals.join('；')}</div>
+              <ol className="payload__list">
+                {schemePayload.body.actions.map((a) => (
+                  <li key={a}>{a}</li>
+                ))}
+              </ol>
+              <div className="payload__hint">
+                聚焦：{schemePayload.body.focusModules.join('、')}
+              </div>
+            </div>
           </div>
         ) : null}
         {message.payload?.type === 'practice_set' ? (
@@ -106,7 +142,7 @@ export function ChatBubble({
           </div>
         ) : null}
 
-        {packSave && questions?.length && !mine ? (
+        {!mine && packSave && questions?.length ? (
           <div className="bubble-pack" role="group" aria-label="题包操作">
             <button
               type="button"
@@ -119,6 +155,22 @@ export function ChatBubble({
               }
             >
               存入出题台
+            </button>
+          </div>
+        ) : null}
+        {!mine && schemeSave && schemePayload ? (
+          <div className="bubble-pack" role="group" aria-label="方案操作">
+            <button
+              type="button"
+              className="pack-btn"
+              onClick={() =>
+                schemeSave.onSaveScheme(schemePayload.title, schemePayload.body, {
+                  schemeId: schemePayload.schemeId,
+                  schemeVersion: schemePayload.schemeVersion,
+                })
+              }
+            >
+              存入方案库
             </button>
           </div>
         ) : null}

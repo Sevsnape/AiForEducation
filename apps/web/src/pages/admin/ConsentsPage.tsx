@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext'
 import type { ConsentFlags, ManagedUser } from '../../types'
 
 const flagLabels: { key: keyof ConsentFlags; label: string }[] = [
-  { key: 'learningPersonalize', label: '画像个性化练习' },
+  { key: 'learningPersonalize', label: '个性化练习' },
   { key: 'historyRetain', label: '留存会话历史' },
   { key: 'shareLearningWithTeacher', label: '学情共享给老师' },
 ]
@@ -93,7 +93,7 @@ export function ConsentsPage() {
       <header>
         <h1 className="page-title">同意设置</h1>
         <p className="page-desc">
-          按班级管理同意策略：校级默认 → 班级模板 → 学生覆盖。学生端暂不开放自助修改。
+          按班级管理同意策略：校级默认 → 班级模板 → 学生覆盖。学生暂不开放自助修改。
         </p>
       </header>
 

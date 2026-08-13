@@ -11,6 +11,7 @@ import type {
   StudentAskProfile,
   StudyPlan,
   SupportProfile,
+  SupportScheme,
   ThreadSummary,
   WeeklySummary,
 } from '../types'
@@ -152,7 +153,7 @@ export const mockSharedMaterials: SharedMaterial[] = [
   {
     id: 'sm-2',
     title: '中考模拟卷 · 函数综合',
-    description: '教师组卷参考；学生端可见可练。',
+    description: '教师组卷参考；学生可见可练。',
     subject: '数学',
     tags: ['模拟卷', '综合'],
     fileName: '中考模拟_函数综合.pdf',
@@ -215,6 +216,98 @@ export const mockSharedMaterials: SharedMaterial[] = [
   },
 ]
 
+/** Teacher: versioned learning-support schemes (authorized analytics only) */
+export const mockSupportSchemes: SupportScheme[] = [
+  {
+    id: 'ss-1',
+    title: '林晓 · 二次函数补差',
+    scope: 'student',
+    studentIds: ['s-1'],
+    studentNames: ['林晓'],
+    basedOn: {
+      accuracy: 0.72,
+      weakTags: ['二次函数'],
+      hotspotModules: ['二次函数'],
+    },
+    createdAt: '2026-08-08T09:00:00.000Z',
+    updatedAt: '2026-08-10T11:30:00.000Z',
+    currentVersion: 2,
+    versions: [
+      {
+        id: 'ssv-1-1',
+        version: 1,
+        createdAt: '2026-08-08T09:00:00.000Z',
+        source: 'class_gen',
+        note: '班级学情一键生成',
+        body: {
+          summary: '林晓练习正确率约 72%，薄弱点为二次函数。基于已授权学情整理。',
+          goals: ['二次函数相关正确率提升约 10%', '能独立完成中档题关键步骤'],
+          actions: [
+            '每天 10–15 分钟围绕「二次函数」巩固',
+            '隔天 1 道变式题并写简短错因',
+            '周末复盘错题 20 分钟',
+          ],
+          focusModules: ['二次函数'],
+          horizon: '14 天',
+        },
+      },
+      {
+        id: 'ssv-1-2',
+        version: 2,
+        createdAt: '2026-08-10T11:30:00.000Z',
+        source: 'chat_save',
+        note: '助手对话迭代：缩短每日时长、加审题步骤',
+        body: {
+          summary: '林晓练习正确率约 72%，薄弱点为二次函数；已收紧每日可完成量。',
+          goals: ['两周内选择正确率超过 80%', '大题前先复述题意'],
+          actions: [
+            '每天 10 分钟二次函数选择',
+            '大题前用自己的话复述题意',
+            '周末错题复盘 15 分钟',
+          ],
+          focusModules: ['二次函数', '应用题'],
+          horizon: '14 天',
+        },
+      },
+    ],
+  },
+  {
+    id: 'ss-2',
+    title: '班级分层 · 二次函数',
+    scope: 'class',
+    studentIds: ['s-1', 's-2'],
+    studentNames: ['林晓', '周予'],
+    basedOn: {
+      accuracy: 0.66,
+      weakTags: ['二次函数', '方程应用'],
+      hotspotModules: ['二次函数', '应用题'],
+    },
+    createdAt: '2026-08-09T16:00:00.000Z',
+    updatedAt: '2026-08-09T16:00:00.000Z',
+    currentVersion: 1,
+    versions: [
+      {
+        id: 'ssv-2-1',
+        version: 1,
+        createdAt: '2026-08-09T16:00:00.000Z',
+        source: 'class_gen',
+        note: '按班级热点一键生成',
+        body: {
+          summary: '已授权 2 人，共享均正确率约 66%。班级提问热点：二次函数、应用题。',
+          goals: ['班级热点模块提问减少', '分层练习覆盖薄弱标签'],
+          actions: [
+            '课上 10 分钟针对热点模块快练',
+            '按正确率分两档布置变式作业',
+            '下周复盘提问模块变化',
+          ],
+          focusModules: ['二次函数', '应用题'],
+          horizon: '7 天',
+        },
+      },
+    ],
+  },
+]
+
 export const mockLearning: LearningProfile = {
   subjectsFocus: ['数学'],
   weakKnowledge: [
@@ -234,7 +327,7 @@ export const mockSupport: SupportProfile = {
   whatHelps: ['先共情再拆任务', '短目标'],
   whatToAvoid: ['说别人都很轻松', '立刻加压刷题'],
   supportPreference: 'warm',
-  safeSummary: '近两周考前紧张，表达过自我否定倾向，无明确危机计划（示例数据）。',
+  safeSummary: '近两周考前紧张，表达过自我否定倾向，无明确危机计划。',
 }
 
 export const mockThreads: ThreadSummary[] = [
@@ -264,7 +357,7 @@ export const mockThreads: ThreadSummary[] = [
     id: 't-3',
     title: '一次函数出题',
     primaryIntent: 'question_gen',
-    preview: '已生成 3 道示例题…',
+    preview: '已生成 3 道练习题…',
     lastActiveAt: '08-08',
     lastActiveDate: '2026-08-08',
     messageCount: 6,
@@ -302,7 +395,7 @@ export const mockGrowthStages: GrowthStage[] = [
     learningText:
       '完成练习 18 题，正确率 68%。二次函数仍是主要薄弱点，应用题审题有所改善。',
     supportText:
-      '考前紧张主题出现多次。短目标拆解对你更有效；系统已避免在高压时追加刷题。',
+      '考前紧张主题出现多次。短目标拆解对你更有效；高压时不会追加刷题。',
     nextSteps: [
       '每天 10 分钟二次函数选择',
       '大题前先用自己的话复述题意',
@@ -378,7 +471,7 @@ export const mockClassStudents: ClassStudentRow[] = [
   },
   {
     id: 's-3',
-    name: '未授权示例',
+    name: '陈默',
     accuracy: 0,
     weakTags: [],
     shared: false,
@@ -392,7 +485,7 @@ export const mockUsers: ManagedUser[] = [
     email: 'admin@school.demo',
     password: 'admin123',
     roles: ['admin'],
-    orgName: '示例中学',
+    orgName: '育才中学',
     status: 'active',
     createdAt: '2026-07-01',
   },
@@ -402,7 +495,7 @@ export const mockUsers: ManagedUser[] = [
     email: 'wang@school.demo',
     password: 'teacher123',
     roles: ['teacher'],
-    orgName: '示例中学',
+    orgName: '育才中学',
     className: '初二(3)班',
     status: 'active',
     createdAt: '2026-07-05',
@@ -413,7 +506,7 @@ export const mockUsers: ManagedUser[] = [
     email: 'linxiao@student.demo',
     password: 'student123',
     roles: ['student'],
-    orgName: '示例中学',
+    orgName: '育才中学',
     className: '初二(3)班',
     status: 'active',
     createdAt: '2026-07-10',
@@ -424,18 +517,18 @@ export const mockUsers: ManagedUser[] = [
     email: 'zhouyu@student.demo',
     password: 'student123',
     roles: ['student'],
-    orgName: '示例中学',
+    orgName: '育才中学',
     className: '初二(3)班',
     status: 'active',
     createdAt: '2026-07-10',
   },
   {
     id: 'u-s3',
-    displayName: '停用示例',
+    displayName: '停用账号',
     email: 'disabled@student.demo',
     password: 'student123',
     roles: ['student'],
-    orgName: '示例中学',
+    orgName: '育才中学',
     className: '初二(1)班',
     status: 'disabled',
     createdAt: '2026-06-20',
@@ -446,25 +539,25 @@ export const mockAudits: AuditRow[] = [
   {
     id: 'a-1',
     actor: '王老师',
-    action: 'guard_deny',
-    resource: 'counsel',
-    purpose: 'teacher_cannot_access_student_support',
+    action: '拒绝访问',
+    resource: '心情会话',
+    purpose: '教师不可查看学生心情支持内容',
     at: '2026-08-09 21:12',
   },
   {
     id: 'a-2',
     actor: '林晓',
-    action: 'safety_reply',
-    resource: 'thread:t-demo',
-    purpose: 'crisis_or_high_risk',
+    action: '危机应答',
+    resource: '对话',
+    purpose: '高风险或危机信号',
     at: '2026-08-08 15:40',
   },
   {
     id: 'a-3',
     actor: '系统管理员',
-    action: 'user_disable',
-    resource: 'user:u-s3',
-    purpose: 'account_lifecycle',
+    action: '停用账号',
+    resource: '用户',
+    purpose: '账号生命周期管理',
     at: '2026-08-01 10:02',
   },
 ]
@@ -504,7 +597,7 @@ export const mockStudentAskProfiles: StudentAskProfile[] = [
 ]
 
 export const welcomeStudent =
-  '你好，我是 AIFOREC。可以陪你练习巩固、按知识点出题、一起定学习计划，或聊聊学习压力——心情相关默认仅你可见。'
+  '你好，我是 AIFOREC。可以陪你练习巩固、按知识点出题、一起定学习计划，或聊聊学习压力。'
 
 export const welcomeTeacher =
-  '你好，教师工作台已就绪。可组卷出题、查看授权范围内学情。学生支持侧内容不会出现在此。'
+  '你好，教学工作台已就绪。可组卷出题、查看授权范围内的学情。'

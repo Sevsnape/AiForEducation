@@ -71,12 +71,12 @@ export function StudioPage() {
     const tag = fromFile ? `${knowledge || '材料要点'}` : knowledge
     const fileHint = fromFile ? `（参考：${files.map((f) => f.name).join('、')}）` : ''
     const list: QuestionItem[] = Array.from({ length: count }, (_, i) => ({
-      stem: `【${subject}·${tag}】示例题 ${i + 1}${fileHint}：请写出一个与材料/知识点相关的关键结论或计算步骤。`,
+      stem: `【${subject}·${tag}】练习题 ${i + 1}${fileHint}：请写出一个与材料/知识点相关的关键结论或计算步骤。`,
       type: 'short_answer',
-      answer: '（Mock 答案占位）',
+      answer: '参考答案待补充',
       explanation: fromFile
-        ? '前端 Mock：接入后端后将解析上传文件并经出题 Agent + review 生成。'
-        : '前端 Mock 题包，接入后端后由出题 Agent + review 生成。',
+        ? '已按上传材料要点生成，可继续在对话中调整难度与题型。'
+        : '已按知识点生成，可继续在对话中调整难度与题型。',
       knowledgeTags: [tag],
       difficulty,
     }))

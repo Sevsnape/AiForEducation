@@ -16,7 +16,7 @@ export function StudentShell() {
     <div className="app-frame">
       <AppHeader
         links={links}
-        subtitle="学生端"
+        subtitle="学习空间"
         userName={currentUser?.displayName}
         onLogout={() => {
           logout()

@@ -26,7 +26,7 @@ export function AnalyticsPage() {
         <div>
           <h1 className="page-title">学情分析</h1>
           <p className="page-desc">
-            记录学生学业提问并聚合模块热点；仅学习侧数据，不含心情/支持原文。
+            记录学生学业提问并聚合模块热点。
           </p>
         </div>
         <div className="analytics__kpis">
