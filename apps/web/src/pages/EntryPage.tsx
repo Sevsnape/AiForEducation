@@ -118,7 +118,7 @@ export function EntryPage() {
         .login-copy {
           position: relative;
           z-index: 1;
-          max-width: 28rem;
+          max-width: min(100%, 36rem);
         }
         .eyebrow {
           text-transform: uppercase;
@@ -129,9 +129,10 @@ export function EntryPage() {
         }
         .login-copy h1 {
           margin: 0;
-          font-size: clamp(2rem, 4vw, 2.8rem);
+          font-size: clamp(1.65rem, 3.2vw, 2.8rem);
           line-height: 1.15;
           color: #f4fffa;
+          white-space: nowrap;
         }
         .login-copy p:last-child {
           margin: 1rem 0 0;
