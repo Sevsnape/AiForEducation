@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext'
 import { AppHeader } from './AppHeader'
 
 const links = [
+  { to: '/student/practice', label: '练习' },
   { to: '/student/chat', label: '对话' },
   { to: '/student/history', label: '历史' },
   { to: '/student/me', label: '我的' },

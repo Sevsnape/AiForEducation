@@ -103,6 +103,49 @@ export type QuestionPack = {
   versions: QuestionPackVersion[]
 }
 
+/** Teacher assigns a pack snapshot to students for practice */
+export type AssignmentAttemptStatus = 'assigned' | 'in_progress' | 'submitted'
+
+export type QuestionAttempt = {
+  questionIndex: number
+  studentAnswer: string
+  correct: boolean
+}
+
+export type PracticeAiAnalysis = {
+  summary: string
+  strengths: string[]
+  weaknesses: string[]
+  nextSteps: string[]
+  focusModules: string[]
+}
+
+export type StudentAssignmentAttempt = {
+  studentId: string
+  studentName: string
+  status: AssignmentAttemptStatus
+  startedAt?: string
+  submittedAt?: string
+  answers: QuestionAttempt[]
+  /** 0–1 */
+  score?: number
+  aiAnalysis?: PracticeAiAnalysis
+}
+
+export type PackAssignment = {
+  id: string
+  packId: string
+  packTitle: string
+  packVersion: number
+  subject: string
+  knowledge: string
+  questions: QuestionItem[]
+  assignedByName: string
+  assignedAt: string
+  dueLabel?: string
+  attempts: StudentAssignmentAttempt[]
+}
+
 export type PracticePayload = {
   type: 'practice_set'
   awaitingAnswer: boolean

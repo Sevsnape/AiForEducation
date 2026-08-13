@@ -12,6 +12,7 @@ import type {
   StudyPlan,
   SupportProfile,
   SupportScheme,
+  PackAssignment,
   ThreadSummary,
   WeeklySummary,
 } from '../types'
@@ -302,6 +303,83 @@ export const mockSupportSchemes: SupportScheme[] = [
           ],
           focusModules: ['二次函数', '应用题'],
           horizon: '7 天',
+        },
+      },
+    ],
+  },
+]
+
+/** Assigned packs for student practice (snapshots) */
+export const mockPackAssignments: PackAssignment[] = [
+  {
+    id: 'asg-1',
+    packId: 'qp-1',
+    packTitle: '二次函数 · 中档综合',
+    packVersion: 2,
+    subject: '数学',
+    knowledge: '二次函数',
+    questions: [
+      {
+        stem: '已知抛物线 y=x²-2x+1，求顶点坐标，并说明是否与 x 轴相切。',
+        type: 'short_answer',
+        answer: '(1,0)；相切',
+        explanation: '顶点在 x 轴上则相切。',
+        knowledgeTags: ['二次函数'],
+        difficulty: 3,
+      },
+      {
+        stem: '若平移使顶点变为 (2,1)，写出新解析式。',
+        type: 'short_answer',
+        answer: 'y=(x-2)²+1',
+        explanation: '顶点式平移。',
+        knowledgeTags: ['二次函数'],
+        difficulty: 3,
+      },
+      {
+        stem: '比较开口与 y=2x² 的异同。',
+        type: 'short_answer',
+        answer: '开口同向上，本抛物线更「窄」若系数更大；此处 a=1 更宽',
+        explanation: '|a| 越大开口越窄。',
+        knowledgeTags: ['二次函数'],
+        difficulty: 3,
+      },
+    ],
+    assignedByName: '王老师',
+    assignedAt: '2026-08-11T09:00:00.000Z',
+    dueLabel: '本周五前',
+    attempts: [
+      {
+        studentId: 'u-s1',
+        studentName: '林晓',
+        status: 'assigned',
+        answers: [],
+      },
+      {
+        studentId: 'u-s2',
+        studentName: '周予',
+        status: 'submitted',
+        startedAt: '2026-08-11T10:00:00.000Z',
+        submittedAt: '2026-08-11T10:25:00.000Z',
+        answers: [
+          { questionIndex: 0, studentAnswer: '(1,0)；相切', correct: true },
+          { questionIndex: 1, studentAnswer: 'y=(x-2)^2+1', correct: true },
+          {
+            questionIndex: 2,
+            studentAnswer: '开口都向上',
+            correct: false,
+          },
+        ],
+        score: 2 / 3,
+        aiAnalysis: {
+          summary: '正确率 67%（2/3）。顶点与平移已掌握，开口宽窄比较仍不稳。',
+          strengths: ['顶点与相切判断正确', '顶点式平移写法基本规范'],
+          weaknesses: ['二次函数：开口宽窄（|a|）表述不完整'],
+          nextSteps: [
+            '对照解析用「|a| 越大开口越窄」造句',
+            '再练 2 道开口比较题',
+            '掌握后再提高综合难度',
+          ],
+          focusModules: ['二次函数'],
         },
       },
     ],

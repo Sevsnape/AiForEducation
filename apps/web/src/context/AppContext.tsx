@@ -10,6 +10,7 @@ import {
   mockConsent,
   mockGrowthStages,
   mockLearning,
+  mockPackAssignments,
   mockQuestionPacks,
   mockSharedMaterials,
   mockStudyPlan,
@@ -20,6 +21,7 @@ import {
   mockUsers,
 } from '../mock/data'
 import { mockLogin, roleHome } from '../mock/auth'
+import { buildAiAnalysis, gradeAnswer } from '../lib/practice'
 import type {
   ChatMessage,
   ClientMode,
@@ -27,6 +29,7 @@ import type {
   GrowthStage,
   LearningProfile,
   ManagedUser,
+  PackAssignment,
   QuestionItem,
   QuestionPack,
   QuestionPackSource,
@@ -80,6 +83,13 @@ type AppendSchemeVersionInput = {
   title?: string
 }
 
+type AssignPackInput = {
+  packId: string
+  students: { id: string; name: string }[]
+  dueLabel?: string
+  assignedByName: string
+}
+
 type AppContextValue = {
   role: Role | null
   currentUser: ManagedUser | null
@@ -118,6 +128,15 @@ type AppContextValue = {
   chatSchemeId: string | null
   attachSchemeToChat: (schemeId: string) => void
   clearChatScheme: () => void
+  /** Pack assignments: teacher distribute → student practice */
+  assignments: PackAssignment[]
+  assignPack: (input: AssignPackInput) => PackAssignment | null
+  startAssignment: (assignmentId: string, studentId: string) => void
+  submitAssignment: (
+    assignmentId: string,
+    studentId: string,
+    answers: { questionIndex: number; studentAnswer: string }[],
+  ) => void
   /** Admin school shared library */
   sharedMaterials: SharedMaterial[]
   upsertSharedMaterial: (
@@ -155,6 +174,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [chatPackId, setChatPackId] = useState<string | null>(null)
   const [supportSchemes, setSupportSchemes] = useState<SupportScheme[]>(mockSupportSchemes)
   const [chatSchemeId, setChatSchemeId] = useState<string | null>(null)
+  const [assignments, setAssignments] = useState<PackAssignment[]>(mockPackAssignments)
   const [sharedMaterials, setSharedMaterials] = useState<SharedMaterial[]>(mockSharedMaterials)
   const [users, setUsers] = useState(mockUsers)
   const [busy, setBusy] = useState(false)
@@ -346,6 +366,98 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearChatScheme = useCallback(() => setChatSchemeId(null), [])
 
+  const assignPack = useCallback(
+    (input: AssignPackInput) => {
+      const pack = questionPacks.find((p) => p.id === input.packId)
+      if (!pack || !input.students.length) return null
+      const ver = pack.versions.find((v) => v.version === pack.currentVersion)
+      const questions: QuestionItem[] =
+        ver?.questions ?? pack.versions[pack.versions.length - 1]?.questions ?? []
+      if (!questions.length) return null
+      const now = stamp()
+      const created: PackAssignment = {
+        id: `asg-${Date.now()}`,
+        packId: pack.id,
+        packTitle: pack.title,
+        packVersion: pack.currentVersion,
+        subject: pack.subject,
+        knowledge: pack.knowledge,
+        questions,
+        assignedByName: input.assignedByName,
+        assignedAt: now,
+        dueLabel: input.dueLabel,
+        attempts: input.students.map((s) => ({
+          studentId: s.id,
+          studentName: s.name,
+          status: 'assigned',
+          answers: [],
+        })),
+      }
+      setAssignments((prev) => [created, ...prev])
+      return created
+    },
+    [questionPacks],
+  )
+
+  const startAssignment = useCallback((assignmentId: string, studentId: string) => {
+    const now = stamp()
+    setAssignments((prev) =>
+      prev.map((a) => {
+        if (a.id !== assignmentId) return a
+        return {
+          ...a,
+          attempts: a.attempts.map((t) =>
+            t.studentId === studentId && t.status === 'assigned'
+              ? { ...t, status: 'in_progress', startedAt: now }
+              : t,
+          ),
+        }
+      }),
+    )
+  }, [])
+
+  const submitAssignment = useCallback(
+    (
+      assignmentId: string,
+      studentId: string,
+      rawAnswers: { questionIndex: number; studentAnswer: string }[],
+    ) => {
+      const now = stamp()
+      setAssignments((prev) =>
+        prev.map((a) => {
+          if (a.id !== assignmentId) return a
+          return {
+            ...a,
+            attempts: a.attempts.map((t) => {
+              if (t.studentId !== studentId) return t
+              const answers = a.questions.map((q, i) => {
+                const found = rawAnswers.find((x) => x.questionIndex === i)
+                const studentAnswer = found?.studentAnswer?.trim() || ''
+                return {
+                  questionIndex: i,
+                  studentAnswer,
+                  correct: gradeAnswer(studentAnswer, q.answer),
+                }
+              })
+              const correctCount = answers.filter((x) => x.correct).length
+              const score = answers.length ? correctCount / answers.length : 0
+              return {
+                ...t,
+                status: 'submitted' as const,
+                startedAt: t.startedAt || now,
+                submittedAt: now,
+                answers,
+                score,
+                aiAnalysis: buildAiAnalysis(a.questions, answers),
+              }
+            }),
+          }
+        }),
+      )
+    },
+    [],
+  )
+
   const logout = useCallback(() => {
     setRole(null)
     setCurrentUser(null)
@@ -422,6 +534,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       chatSchemeId,
       attachSchemeToChat,
       clearChatScheme,
+      assignments,
+      assignPack,
+      startAssignment,
+      submitAssignment,
       sharedMaterials,
       upsertSharedMaterial,
       setSharedMaterialStatus,
@@ -459,6 +575,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       chatSchemeId,
       attachSchemeToChat,
       clearChatScheme,
+      assignments,
+      assignPack,
+      startAssignment,
+      submitAssignment,
       sharedMaterials,
       upsertSharedMaterial,
       setSharedMaterialStatus,

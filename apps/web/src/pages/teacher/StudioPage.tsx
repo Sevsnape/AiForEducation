@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { FileAttachControl } from '../../components/FileAttachControl'
 import { SharedMaterialPicker } from '../../components/SharedMaterialPicker'
 import { useApp } from '../../context/AppContext'
+import { mockClassStudents } from '../../mock/data'
 import type { ChatAttachment, QuestionItem, QuestionPack } from '../../types'
 
 const sourceZh = {
@@ -22,9 +23,11 @@ export function StudioPage() {
     createQuestionPack,
     appendPackVersion,
     attachPackToChat,
+    assignPack,
     chatPackId,
     setMessages,
     setMode,
+    currentUser,
   } = useApp()
   const navigate = useNavigate()
   const [subject, setSubject] = useState('数学')
@@ -121,6 +124,29 @@ export function StudioPage() {
     navigate('/teacher/chat')
   }
 
+  function assignSelected(pack: QuestionPack) {
+    const students = mockClassStudents
+      .filter((s) => s.shared)
+      .map((s) => ({
+        id: s.id === 's-1' ? 'u-s1' : s.id === 's-2' ? 'u-s2' : s.id,
+        name: s.name,
+      }))
+    if (!students.length) {
+      alert('暂无已授权学情的学生')
+      return
+    }
+    const created = assignPack({
+      packId: pack.id,
+      students,
+      dueLabel: '本周五前',
+      assignedByName: currentUser?.displayName || '老师',
+    })
+    if (created) {
+      setSourceNote(`已下发「${created.packTitle}」给 ${students.length} 名学生`)
+      navigate('/teacher/assignments')
+    }
+  }
+
   function restoreVersion(pack: QuestionPack, version: number) {
     const snap = pack.versions.find((v) => v.version === version)
     if (!snap) return
@@ -144,12 +170,17 @@ export function StudioPage() {
         <div>
           <h1 className="page-title">出题台</h1>
           <p className="page-desc">
-            题包可追溯、可版本管理；可引用管理员发布的校本资料出题，也可「添加到对话」与 AI 完善。
+            题包可追溯、可版本管理；可引用校本资料出题、「添加到对话」完善，并可下发给学生练习。
           </p>
         </div>
-        <Link className="btn btn-sm" to="/teacher/chat">
-          打开助手
-        </Link>
+        <div className="studio-head__actions">
+          <Link className="btn btn-sm" to="/teacher/assignments">
+            作业下发
+          </Link>
+          <Link className="btn btn-sm" to="/teacher/chat">
+            打开助手
+          </Link>
+        </div>
       </header>
 
       <form className="surface studio-form" onSubmit={onGenerate}>
@@ -340,6 +371,13 @@ export function StudioPage() {
                 <div className="studio-detail__actions">
                   <button
                     type="button"
+                    className="btn btn-sm"
+                    onClick={() => assignSelected(selected)}
+                  >
+                    下发给学生
+                  </button>
+                  <button
+                    type="button"
                     className="btn btn-sm btn-accent"
                     onClick={() => addPackToChat(selected)}
                   >
@@ -409,6 +447,11 @@ export function StudioPage() {
           justify-content: space-between;
           align-items: flex-start;
           gap: 0.75rem;
+        }
+        .studio-head__actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.4rem;
         }
         .studio-form {
           display: grid;

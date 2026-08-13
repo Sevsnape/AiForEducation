@@ -13,6 +13,8 @@ import { EntryPage } from './pages/EntryPage'
 import { ChatPage } from './pages/student/ChatPage'
 import { HistoryPage } from './pages/student/HistoryPage'
 import { MePage } from './pages/student/MePage'
+import { PracticePage } from './pages/student/PracticePage'
+import { AssignmentsPage } from './pages/teacher/AssignmentsPage'
 import { ClassPage } from './pages/teacher/ClassPage'
 import { SchemesPage } from './pages/teacher/SchemesPage'
 import { StudioPage } from './pages/teacher/StudioPage'
@@ -45,10 +47,11 @@ export default function App() {
             </RequireRole>
           }
         >
+          <Route path="practice" element={<PracticePage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="history" element={<HistoryPage />} />
           <Route path="me" element={<MePage />} />
-          <Route index element={<Navigate to="chat" replace />} />
+          <Route index element={<Navigate to="practice" replace />} />
         </Route>
         <Route
           path="/teacher"
@@ -59,6 +62,7 @@ export default function App() {
           }
         >
           <Route path="studio" element={<StudioPage />} />
+          <Route path="assignments" element={<AssignmentsPage />} />
           <Route path="class" element={<ClassPage />} />
           <Route path="schemes" element={<SchemesPage />} />
           <Route path="chat" element={<TeacherChatPage />} />
